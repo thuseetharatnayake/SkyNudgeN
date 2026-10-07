@@ -23,3 +23,19 @@ a { color: inherit; }
 .page-copy { margin: var(--space-3) 0 0; color: var(--color-text-secondary); line-height: 1.55; }
 .page-stack { display: grid; gap: var(--space-6); }
 .placeholder-note { margin-top: var(--space-6); padding: var(--space-4); color: var(--color-text-secondary); background: var(--color-very-light-blue); border: 1px solid var(--color-border); border-radius: var(--radius-medium); line-height: 1.5; }
+.auth-form { display: grid; gap: var(--space-4); }
+.auth-field { display: grid; gap: var(--space-2); color: var(--color-text-primary); font-size: 14px; font-weight: 600; }
+.auth-field input { width: 100%; min-height: 52px; padding: 0 var(--space-4); color: var(--color-text-primary); background: #fff; border: 1px solid var(--color-border); border-radius: var(--radius-medium); }
+.auth-field input::placeholder { color: var(--color-text-secondary); }
+.auth-button { min-height: 52px; padding: 0 var(--space-4); color: #fff; font-weight: 700; background: var(--color-primary); border: 0; border-radius: var(--radius-medium); }
+.auth-button:disabled { opacity: .65; }
+.auth-error, .auth-message { margin: 0; padding: var(--space-3); border-radius: var(--radius-small); line-height: 1.45; }
+.auth-error { color: #8c2020; background: #fff1f1; border: 1px solid #f1c6c6; }
+.auth-message { color: #1f5d3f; background: #eef9f2; border: 1px solid #bddfc9; }
+.auth-switch { margin: 0; color: var(--color-text-secondary); font-size: 14px; text-align: center; }
+.auth-switch a { color: var(--color-primary); font-weight: 700; text-decoration: none; }
+.nudge-form { display: grid; gap: var(--space-4); }
+.nudge-checkbox { display: flex; gap: var(--space-2); align-items: flex-start; color: var(--color-text-secondary); line-height: 1.45; }
+.nudge-checkbox input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--color-primary); }
+.nudge-detail { display: grid; gap: var(--space-2); padding: var(--space-4); background: var(--color-very-light-blue); border: 1px solid var(--color-border); border-radius: var(--radius-medium); }
+.nudge-detail strong { text-transform: capitalize; }.nudge-detail span, .nudge-detail p { margin: 0; color: var(--color-text-secondary); }.nudge-photo { width: 100%; max-height: 320px; object-fit: cover; border-radius: var(--radius-medium); }
