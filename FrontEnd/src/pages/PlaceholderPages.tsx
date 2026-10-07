@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useSkyNudgeApi } from '../app/providers/useSkyNudgeApi';
 import { useAuth } from '../app/providers/useAuth';
+import { ActiveMomentPage as ActiveMomentScreen } from '../components/active-moment/ActiveMomentPage';
 import { MomentEntry } from '../components/moments/MomentEntry';
 import { MomentsHeader } from '../components/moments/MomentsHeader';
 import { CalendarGrid } from '../components/calendar/CalendarGrid';
@@ -12,7 +13,7 @@ import { useNearbyNudges } from '../hooks/useNearbyNudges';
 import { Segmented } from '../components/ui/Segmented';
 import { Toggle } from '../components/ui/Toggle';
 import { RoutePlaceholder } from './RoutePlaceholder';
-import type { Category, Direction, Intensity, Nudge, RadiusKm, SkyMoment, SkyUser, VerificationStatus } from '../types/sky';
+import type { Category, Direction, Intensity, RadiusKm, SkyMoment, SkyUser, VerificationStatus } from '../types/sky';
 
 const melbourneFallback = { lat: -37.8136, lng: 144.9631 };
 const categories: Category[] = ['sunset', 'sunrise', 'rainbow', 'clouds', 'moon', 'other'];
@@ -173,107 +174,7 @@ export function HomePage(): JSX.Element {
   return <HomeScreen {...nearby} onAccount={() => navigate('/account')} onCreate={() => navigate('/nudge/new')} onOpenNudge={(id) => navigate(`/nudge/${id}`)} onEnableLocation={() => void nearby.requestLocation()} onRetry={() => void nearby.retry()} />;
 }
 
-export function ActiveMomentPage(): JSX.Element {
-  const api = useSkyNudgeApi();
-  const navigate = useNavigate();
-  const { nudgeId } = useParams();
-  const [nudge, setNudge] = useState<Nudge | null>(null);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isConfirming, setIsConfirming] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [savedMessage, setSavedMessage] = useState('');
-  const [reportReason, setReportReason] = useState('');
-  const [isReporting, setIsReporting] = useState(false);
-  const [isBlocking, setIsBlocking] = useState(false);
-  const [showReportForm, setShowReportForm] = useState(false);
-
-  const loadNudge = useCallback(async (): Promise<void> => {
-    if (!nudgeId) return;
-    setError('');
-    try { setNudge(await api.getNudge(nudgeId)); }
-    catch (caughtError) { setError(getErrorMessage(caughtError)); }
-    finally { setIsLoading(false); }
-  }, [api, nudgeId]);
-
-  useEffect(() => { void loadNudge(); }, [loadNudge]);
-
-  async function confirm(): Promise<void> {
-    if (!nudge) return;
-    setIsConfirming(true);
-    setError('');
-    try { setNudge(await api.confirmSighting(nudge.id)); }
-    catch (caughtError) { setError(getErrorMessage(caughtError)); }
-    finally { setIsConfirming(false); }
-  }
-
-  async function saveAsMoment(): Promise<void> {
-    if (!nudge) return;
-    setIsSaving(true);
-    setError('');
-    setSavedMessage('');
-    try {
-      const moment = await api.saveMoment({ nudge_id: nudge.id });
-      if (!nudge.photo_url) {
-        setSavedMessage('Saved to your private Sky Moments archive.');
-        return;
-      }
-      try {
-        await api.addMomentPhotos(moment.id, [await fetchNudgePhoto(nudge.photo_url)]);
-        setSavedMessage('Saved to your private Sky Moments archive with its photo.');
-      } catch {
-        setSavedMessage('Saved to your private Sky Moments archive. The shared photo could not be copied, but you can add it manually.');
-      }
-    } catch (caughtError) {
-      setError(getErrorMessage(caughtError));
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  async function report(): Promise<void> {
-    if (!nudge) return;
-    setIsReporting(true);
-    setError('');
-    try {
-      await api.reportNudge(nudge.id, reportReason);
-      setReportReason('');
-      setShowReportForm(false);
-      setSavedMessage('Thanks. Your report has been submitted for review.');
-    } catch (caughtError) {
-      setError(getErrorMessage(caughtError));
-    } finally {
-      setIsReporting(false);
-    }
-  }
-
-  async function blockPoster(): Promise<void> {
-    if (!nudge) return;
-    setIsBlocking(true);
-    setError('');
-    try {
-      await api.blockUser(nudge.poster.id);
-      navigate('/home', { replace: true });
-    } catch (caughtError) {
-      setError(getErrorMessage(caughtError));
-    } finally {
-      setIsBlocking(false);
-    }
-  }
-
-  if (isLoading) return <div className="screen-page"><p className="page-copy">Loading SkyNudge…</p></div>;
-  if (error) return <div className="screen-page"><p className="auth-error" role="alert">{error}</p></div>;
-  if (!nudge) return <div className="screen-page"><p className="placeholder-note">This SkyNudge is no longer active or is unavailable.</p></div>;
-  return <div className="screen-page"><div className="page-stack"><div><p className="page-eyebrow">Active moment</p><h1 className="page-title">Look {nudge.direction}</h1><p className="page-copy">{nudge.category} shared by {nudge.poster.username}. {nudge.landmark ? `Near ${nudge.landmark}.` : ''}</p></div>
-    {nudge.photo_url ? <img className="nudge-photo" src={nudge.photo_url} alt="Shared sky moment" /> : null}
-    <div className="nudge-detail"><strong>{nudge.intensity.replace('_', ' ')}</strong><span>{nudge.watcher_count} people can see it</span>{nudge.note ? <p>{nudge.note}</p> : null}</div>
-    {nudge.confirmed_by_me ? <p className="auth-message">You confirmed this SkyNudge.</p> : <button className="sky-button sky-button--primary sky-button--full" type="button" disabled={isConfirming} onClick={() => void confirm()}>{isConfirming ? 'Confirming…' : 'I can see it too'}</button>}
-    {savedMessage ? <p className="auth-message">{savedMessage}</p> : null}
-    <button className="sky-button sky-button--secondary sky-button--full" type="button" disabled={isSaving} onClick={() => void saveAsMoment()}>{isSaving ? 'Saving…' : 'Save as Sky Moment'}</button>
-    <div className="safety-actions"><button className="sky-button sky-button--text" type="button" onClick={() => setShowReportForm((visible) => !visible)}>Report this SkyNudge</button><button className="sky-button sky-button--danger" type="button" disabled={isBlocking} onClick={() => void blockPoster()}>{isBlocking ? 'Blocking…' : `Block ${nudge.poster.username}`}</button></div>
-    {showReportForm ? <form className="report-form" onSubmit={(event) => { event.preventDefault(); void report(); }}><label className="sky-field"><span className="sky-field__label">Why are you reporting this?</span><textarea className="sky-field__input report-form__textarea" value={reportReason} onChange={(event) => setReportReason(event.target.value)} maxLength={500} placeholder="Describe the issue" required /></label><button className="sky-button sky-button--danger" type="submit" disabled={isReporting}>{isReporting ? 'Sending report…' : 'Submit report'}</button></form> : null}
-  </div></div>;
-}
+export function ActiveMomentPage(): JSX.Element { return <ActiveMomentScreen />; }
 
 export function NudgeStepOnePage(): JSX.Element {
   const api = useSkyNudgeApi();
@@ -479,17 +380,6 @@ function getCurrentLocation(): Promise<{ lat: number; lng: number }> {
       { enableHighAccuracy: false, timeout: 8_000, maximumAge: 60_000 },
     );
   });
-}
-
-async function fetchNudgePhoto(url: string): Promise<File> {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error('The shared photo could not be downloaded.');
-  const photo = await response.blob();
-  if (photo.type !== 'image/jpeg' && photo.type !== 'image/png') {
-    throw new Error('The shared photo is not a JPEG or PNG image.');
-  }
-  const extension = photo.type === 'image/png' ? 'png' : 'jpg';
-  return new File([photo], `saved-sky-moment.${extension}`, { type: photo.type });
 }
 
 function verificationStatusCopy(status: VerificationStatus): { title: string; description: string } {

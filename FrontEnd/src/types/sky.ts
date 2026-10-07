@@ -34,11 +34,18 @@ export interface Nudge {
   landmark: string | null;
   coordinates: Coordinates;
   created_at: string;
+  expires_at?: string;
   poster: Pick<SkyUser, 'id' | 'username' | 'verification_status'>;
   watcher_count: number;
   confirmed_by_me: boolean;
+  seen_count?: number;
+  i_can_see_it?: boolean;
   photo_url: string | null;
   note: string;
+  username?: string;
+  verified?: boolean;
+  distance_km?: number;
+  place_name?: string;
 }
 
 export interface CreateNudgeInput {

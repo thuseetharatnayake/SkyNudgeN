@@ -38,6 +38,9 @@ type NudgeRpcRow = {
   note: string | null;
   photo_path: string | null;
   created_at: string;
+  expires_at?: string | null;
+  distance_km?: number | string | null;
+  place_name?: string | null;
   poster_id: string;
   poster_username: string;
   poster_is_verified: boolean;
@@ -108,6 +111,11 @@ function toNudge(row: NudgeRpcRow): Nudge {
     landmark: row.landmark,
     coordinates: { lat: Number(row.latitude), lng: Number(row.longitude) },
     created_at: row.created_at,
+    expires_at: row.expires_at ?? new Date(Date.parse(row.created_at) + 30 * 60_000).toISOString(),
+    distance_km: row.distance_km == null ? 0 : Number(row.distance_km),
+    place_name: row.place_name ?? row.landmark ?? 'your area',
+    username: row.poster_username,
+    verified: row.poster_is_verified,
     poster: {
       id: row.poster_id,
       username: row.poster_username,
@@ -115,6 +123,8 @@ function toNudge(row: NudgeRpcRow): Nudge {
     },
     watcher_count: Number(row.seen_count),
     confirmed_by_me: row.i_saw_it,
+    seen_count: Number(row.seen_count),
+    i_can_see_it: row.i_saw_it,
     photo_url: photoUrl,
     note: row.note ?? '',
   };

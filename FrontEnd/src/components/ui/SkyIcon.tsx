@@ -1,6 +1,6 @@
 import type { Category } from '../../types/sky';
 
-type IconName = Category | 'home' | 'archive' | 'account' | 'arrow' | 'check' | 'lock' | 'shield' | 'location' | 'clock' | 'camera' | 'chevron-left' | 'chevron-right';
+type IconName = Category | 'home' | 'archive' | 'account' | 'arrow' | 'check' | 'lock' | 'shield' | 'location' | 'clock' | 'camera' | 'chevron-left' | 'chevron-right' | 'more';
 
 interface SkyIconProps { name: IconName; size?: number; strokeWidth?: number; title?: string; }
 
@@ -26,6 +26,7 @@ export function SkyIcon({ name, size = 24, strokeWidth = 1.8, title }: SkyIconPr
     case 'camera': paths = <><path {...shared} d="M4 8h3l1.5-2h7L17 8h3v11H4z" /><circle {...shared} cx="12" cy="13" r="3.5" /></>; break;
     case 'chevron-left': paths = <path {...shared} d="m14 6-6 6 6 6" />; break;
     case 'chevron-right': paths = <path {...shared} d="m10 6 6 6-6 6" />; break;
+    case 'more': paths = <><circle cx="5" cy="12" r="1.3" fill="currentColor" /><circle cx="12" cy="12" r="1.3" fill="currentColor" /><circle cx="19" cy="12" r="1.3" fill="currentColor" /></>; break;
   }
   return <svg aria-hidden={title ? undefined : true} aria-label={title} width={size} height={size} viewBox="0 0 24 24" focusable="false">{title ? <title>{title}</title> : null}{paths}</svg>;
 }

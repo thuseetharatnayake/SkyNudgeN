@@ -14,6 +14,7 @@ import type {
 } from '../types/sky';
 
 const minutesAgo = (minutes: number): string => new Date(Date.now() - minutes * 60_000).toISOString();
+const minutesFromNow = (minutes: number): string => new Date(Date.now() + minutes * 60_000).toISOString();
 
 const skyImage = (top: string, bottom: string, accent: string): string => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900"><defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop stop-color="${top}"/><stop offset="1" stop-color="${bottom}"/></linearGradient></defs><rect width="1200" height="900" fill="url(#g)"/><circle cx="930" cy="260" r="96" fill="${accent}" opacity=".88"/><path d="M0 670C190 590 330 760 535 672S890 590 1200 704V900H0Z" fill="#1b334d" opacity=".4"/><path d="M0 770C210 685 430 806 650 738s328-21 550 58v104H0Z" fill="#111" opacity=".3"/></svg>`;
@@ -31,11 +32,11 @@ const initialProfile: SkyUser = {
 };
 
 const melbourneNudges: Nudge[] = [
-  { id: 'nudge-1', category: 'sunset', intensity: 'look_now', direction: 'west', radius_km: 5, landmark: 'St Kilda Beach', coordinates: { lat: -37.82, lng: 144.97 }, created_at: minutesAgo(3), poster: { id: 'person-1', username: 'HarbourGlow219', verification_status: 'verified' }, watcher_count: 18, confirmed_by_me: false, photo_url: skyImage('#ff9d67', '#4968a9', '#ffe3a9'), note: 'The horizon is glowing peach and violet right now.' },
-  { id: 'nudge-2', category: 'rainbow', intensity: 'look_now', direction: 'east', radius_km: 5, landmark: 'Richmond', coordinates: { lat: -37.82, lng: 144.99 }, created_at: minutesAgo(7), poster: { id: 'person-2', username: 'MistyArc604', verification_status: 'not_verified' }, watcher_count: 12, confirmed_by_me: false, photo_url: skyImage('#8ac7ea', '#f8c0b2', '#ffffff'), note: 'A clear rainbow is sitting above the rooftops.' },
-  { id: 'nudge-3', category: 'clouds', intensity: 'wow', direction: 'above', radius_km: 2, landmark: 'Fitzroy Gardens', coordinates: { lat: -37.81, lng: 144.98 }, created_at: minutesAgo(14), poster: { id: 'user-1', username: 'CloudDrifter482', verification_status: 'verified' }, watcher_count: 8, confirmed_by_me: true, photo_url: null, note: 'Huge silver-edged clouds moving over the city.' },
-  { id: 'nudge-4', category: 'moon', intensity: 'beautiful', direction: 'above', radius_km: 2, landmark: 'Carlton Gardens', coordinates: { lat: -37.8, lng: 144.97 }, created_at: minutesAgo(21), poster: { id: 'person-4', username: 'LunarWalker808', verification_status: 'not_verified' }, watcher_count: 6, confirmed_by_me: false, photo_url: null, note: 'A pale moon is visible through the blue.' },
-  { id: 'nudge-5', category: 'sunset', intensity: 'beautiful', direction: 'west', radius_km: 5, landmark: 'Southbank', coordinates: { lat: -37.83, lng: 144.96 }, created_at: minutesAgo(25), poster: { id: 'person-5', username: 'QuietHorizon377', verification_status: 'verified' }, watcher_count: 4, confirmed_by_me: false, photo_url: null, note: 'Soft gold over the river.' },
+  { id: 'nudge-1', category: 'sunset', intensity: 'look_now', direction: 'west', radius_km: 5, landmark: 'Brighton Beach', coordinates: { lat: -37.92, lng: 144.99 }, created_at: minutesAgo(4), expires_at: minutesFromNow(25), distance_km: 4.6, place_name: 'Brighton Beach', username: 'HarbourGlow219', verified: true, poster: { id: 'person-1', username: 'HarbourGlow219', verification_status: 'verified' }, watcher_count: 7, seen_count: 7, confirmed_by_me: false, i_can_see_it: false, photo_url: skyImage('#ff9d67', '#4968a9', '#ffe3a9'), note: 'The horizon is glowing peach and violet right now.' },
+  { id: 'nudge-2', category: 'rainbow', intensity: 'look_now', direction: 'east', radius_km: 5, landmark: 'Richmond', coordinates: { lat: -37.82, lng: 144.99 }, created_at: minutesAgo(7), expires_at: minutesFromNow(23), distance_km: 3.1, place_name: 'Richmond', username: 'MistyArc604', verified: false, poster: { id: 'person-2', username: 'MistyArc604', verification_status: 'not_verified' }, watcher_count: 12, seen_count: 12, confirmed_by_me: false, i_can_see_it: false, photo_url: skyImage('#8ac7ea', '#f8c0b2', '#ffffff'), note: 'A clear rainbow is sitting above the rooftops.' },
+  { id: 'nudge-3', category: 'clouds', intensity: 'wow', direction: 'above', radius_km: 2, landmark: 'Fitzroy Gardens', coordinates: { lat: -37.81, lng: 144.98 }, created_at: minutesAgo(14), expires_at: minutesFromNow(16), distance_km: 2.4, place_name: 'Fitzroy Gardens', username: 'CloudDrifter482', verified: true, poster: { id: 'user-1', username: 'CloudDrifter482', verification_status: 'verified' }, watcher_count: 8, seen_count: 8, confirmed_by_me: true, i_can_see_it: true, photo_url: null, note: 'Huge silver-edged clouds moving over the city.' },
+  { id: 'nudge-4', category: 'moon', intensity: 'beautiful', direction: 'above', radius_km: 2, landmark: 'Carlton Gardens', coordinates: { lat: -37.8, lng: 144.97 }, created_at: minutesAgo(21), expires_at: minutesFromNow(9), distance_km: 2.8, place_name: 'Carlton Gardens', username: 'LunarWalker808', verified: false, poster: { id: 'person-4', username: 'LunarWalker808', verification_status: 'not_verified' }, watcher_count: 6, seen_count: 6, confirmed_by_me: false, i_can_see_it: false, photo_url: null, note: 'A pale moon is visible through the blue.' },
+  { id: 'nudge-5', category: 'sunset', intensity: 'beautiful', direction: 'west', radius_km: 5, landmark: 'Southbank', coordinates: { lat: -37.83, lng: 144.96 }, created_at: minutesAgo(25), expires_at: minutesFromNow(5), distance_km: 1.8, place_name: 'Southbank', username: 'QuietHorizon377', verified: true, poster: { id: 'person-5', username: 'QuietHorizon377', verification_status: 'verified' }, watcher_count: 4, seen_count: 4, confirmed_by_me: false, i_can_see_it: false, photo_url: null, note: 'Soft gold over the river.' },
 ];
 
 function localTimestamp(day: number, hour: number, minute: number): string {
@@ -98,7 +99,7 @@ export class MockSkyNudgeApi implements SkyNudgeApi {
 
   async createNudge(input: CreateNudgeInput): Promise<Nudge> {
     if (!this.profile) throw new Error('You must be signed in to create a SkyNudge.');
-    const nudge: Nudge = { id: `nudge-${Date.now()}`, category: input.category, intensity: input.intensity, direction: input.direction, radius_km: input.radius_km as RadiusKm, landmark: input.landmark, coordinates: { ...input.coordinates }, created_at: new Date().toISOString(), poster: { id: this.profile.id, username: this.profile.username, verification_status: this.profile.verification_status }, watcher_count: 1, confirmed_by_me: true, photo_url: null, note: 'Posted from your area just now.' };
+    const nudge: Nudge = { id: `nudge-${Date.now()}`, category: input.category, intensity: input.intensity, direction: input.direction, radius_km: input.radius_km as RadiusKm, landmark: input.landmark, coordinates: { ...input.coordinates }, created_at: new Date().toISOString(), expires_at: minutesFromNow(30), distance_km: 0, place_name: input.landmark ?? 'your area', username: this.profile.username, verified: this.profile.verification_status === 'verified', poster: { id: this.profile.id, username: this.profile.username, verification_status: this.profile.verification_status }, watcher_count: 1, seen_count: 1, confirmed_by_me: true, i_can_see_it: true, photo_url: null, note: 'Posted from your area just now.' };
     this.nudges = [nudge, ...this.nudges];
     this.notify();
     return copyNudge(nudge);
@@ -107,7 +108,7 @@ export class MockSkyNudgeApi implements SkyNudgeApi {
   async confirmSighting(id: string): Promise<Nudge> {
     const nudge = this.nudges.find((candidate) => candidate.id === id);
     if (!nudge) throw new Error('SkyNudge not found.');
-    if (!nudge.confirmed_by_me) { nudge.confirmed_by_me = true; nudge.watcher_count += 1; this.notify(); }
+    if (!nudge.confirmed_by_me) { nudge.confirmed_by_me = true; nudge.i_can_see_it = true; nudge.watcher_count += 1; nudge.seen_count = nudge.watcher_count; this.notify(); }
     return copyNudge(nudge);
   }
 
