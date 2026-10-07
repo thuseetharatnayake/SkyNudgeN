@@ -1,0 +1,660 @@
+<title>SkyNudge Demo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap">
+<style>
+/* Layout: a 430 x 900 phone frame centred on desktop, full viewport on a phone. White surfaces, Instagram-style blue only as accent. */
+:root{
+  --bg:#FFFFFF;
+  --ink:#111111;
+  --ink-2:#5B6572;
+  --ink-3:#8791A0;
+  --line:#E6EAF0;
+  --sky:#0064E0;
+  --sky-2:#1877F2;
+  --sky-deep:#0053BD;
+  --sky-pale:#E7F4FF;
+  --sky-wash:#F5FAFF;
+  --cta:linear-gradient(135deg,#0064E0 0%,#3B8EF0 100%);
+  --danger:#B3261E;
+  --danger-wash:#FDECEA;
+  --stage:#F5FAFF;
+  --serif:"Playfair Display",Georgia,"Times New Roman",serif;
+  --sans:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--stage);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+.stage{height:100%;display:flex;align-items:center;justify-content:center}
+.frame{position:relative;width:100%;max-width:430px;height:100%;max-height:900px;background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
+@media (min-width:500px) and (min-height:640px){
+  .stage{padding:16px}
+  .frame{border:1px solid var(--line);border-radius:36px;box-shadow:0 24px 60px rgba(20,50,100,.10)}
+}
+.screen{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.pad{padding:8px 20px 28px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px 0 8px;min-height:56px}
+.topbar.plain{padding-left:20px}
+.iconbtn{width:44px;height:44px;border:0;background:none;border-radius:12px;display:grid;place-items:center;color:var(--ink);padding:0}
+.iconbtn:hover{background:var(--sky-wash)}
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px;border-radius:10px}
+
+/* type */
+h1,h2,h3,p{margin:0}
+.serif{font-family:var(--serif);font-weight:500;letter-spacing:-.01em}
+.h1{font-family:var(--serif);font-weight:500;font-size:34px;line-height:1.12;letter-spacing:-.015em;text-wrap:balance}
+.h2{font-family:var(--serif);font-weight:500;font-size:28px;line-height:1.15;letter-spacing:-.01em;text-wrap:balance}
+.h3{font-size:17px;font-weight:600;letter-spacing:-.005em}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--sky);display:flex;align-items:center;gap:8px}
+.sub{color:var(--ink-2);font-size:16px;line-height:1.5;max-width:34ch}
+.small{font-size:13px;color:var(--ink-2)}
+.muted{color:var(--ink-3)}
+.stack>*+*{margin-top:var(--s,16px)}
+.dot-live{width:7px;height:7px;border-radius:50%;background:var(--sky);position:relative}
+.dot-live::after{content:"";position:absolute;inset:-4px;border-radius:50%;background:var(--sky);opacity:.18;animation:pulse 2.4s ease-out infinite}
+@keyframes pulse{0%{transform:scale(.6);opacity:.3}100%{transform:scale(1.6);opacity:0}}
+@media (prefers-reduced-motion:reduce){.dot-live::after{animation:none}*{scroll-behavior:auto!important;transition:none!important}}
+
+/* brand */
+.brand{display:flex;align-items:center;gap:8px;font-family:var(--serif);font-weight:600;font-size:21px;letter-spacing:-.01em;color:var(--ink)}
+.brand svg{color:var(--sky)}
+.userchip{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:0 12px;height:36px;font-size:13px;font-weight:500;color:var(--ink)}
+.vbadge{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;background:var(--sky);color:#fff;flex:none;vertical-align:-2px}
+.vbadge svg{display:block}
+
+/* buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border:1px solid transparent;border-radius:14px;font-size:16px;font-weight:600;padding:0 18px;transition:transform .12s,background .12s}
+.btn:active{transform:scale(.99)}
+.btn-primary{background:var(--sky);color:#fff}
+.btn-primary:hover{background:#0053BD}
+.btn-grad{background:var(--cta);color:#fff;box-shadow:0 8px 22px rgba(0,100,224,.22)}
+.btn-line{background:#fff;border-color:var(--line);color:var(--ink)}
+.btn-line:hover{background:var(--sky-wash)}
+.btn-text{background:none;color:var(--sky-deep);min-height:44px}
+.btn[disabled]{background:var(--sky-pale);color:#7AB8E8;box-shadow:none;cursor:not-allowed}
+.btn-done{background:var(--sky-wash);color:var(--sky-deep);border-color:var(--sky-pale)}
+
+/* fields */
+.field{display:block}
+.field>span{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.field>span em{font-style:normal;font-weight:400;color:var(--ink-2)}
+.input{width:100%;height:52px;border:1px solid var(--line);border-radius:12px;padding:0 14px;font:inherit;font-size:16px;color:var(--ink);background:#fff}
+.input::placeholder{color:var(--ink-3)}
+.input:focus{border-color:var(--sky);box-shadow:0 0 0 3px var(--sky-pale)}
+.check{display:flex;gap:12px;align-items:flex-start;font-size:14px;color:var(--ink-2);cursor:pointer}
+.check input{appearance:none;flex:none;width:24px;height:24px;margin:0;border:1.5px solid #C5CCD8;border-radius:7px;background:#fff;display:grid;place-items:center}
+.check input:checked{background:var(--sky);border-color:var(--sky)}
+.check input:checked::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.check input:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+
+/* choice + segmented */
+.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.choice{display:flex;flex-direction:column;align-items:flex-start;gap:14px;text-align:left;padding:16px;min-height:104px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink)}
+.choice .ic{color:var(--sky)}
+.choice b{font-weight:600;font-size:15px}
+.choice[aria-pressed="true"]{border-color:var(--sky);background:var(--sky-wash);box-shadow:inset 0 0 0 1px var(--sky)}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg-opt{flex:1 1 0;min-width:fit-content;min-height:46px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:#fff;font-weight:500;font-size:15px;color:var(--ink)}
+.seg-opt[aria-pressed="true"]{border-color:var(--sky);background:var(--sky-pale);color:var(--sky-deep);font-weight:600}
+.label{font-size:13px;font-weight:600;margin-bottom:8px;display:block}
+.switch{position:relative;flex:none;width:52px;height:32px;border:0;border-radius:999px;background:#D3D9E3;padding:0;transition:background .15s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}
+.switch[aria-checked="true"]{background:var(--sky)}
+.switch[aria-checked="true"]::after{transform:translateX(20px)}
+
+/* rows */
+.rows{display:flex;flex-direction:column}
+.row{display:flex;align-items:center;gap:14px;width:100%;padding:14px 0;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;color:var(--ink);min-height:72px}
+.row:last-child{border-bottom:0}
+.row .grow{flex:1;min-width:0}
+.row .t{font-weight:600;font-size:16px;display:block;overflow-wrap:anywhere}
+.row .s{font-size:13px;color:var(--ink-2);display:block;margin-top:2px}
+.tile{width:44px;height:44px;border-radius:12px;background:var(--sky-pale);color:var(--sky);display:grid;place-items:center;flex:none}
+.chev{color:#B3BBC8;flex:none}
+.pill{display:inline-flex;align-items:center;font-size:12px;font-weight:600;line-height:1;padding:6px 10px;border-radius:999px;white-space:nowrap}
+.pill.look{background:var(--sky);color:#fff}
+.pill.wow{background:var(--sky-pale);color:var(--sky-deep)}
+.pill.nice{border:1px solid var(--line);color:var(--ink-2);background:#fff}
+.st-none{background:#EFF2F6;color:var(--ink-2)}
+.st-pending{background:var(--sky-pale);color:var(--sky-deep)}
+.st-verified{background:var(--sky);color:#fff}
+.st-rejected{background:var(--danger-wash);color:var(--danger)}
+.divider{height:1px;background:var(--line);border:0;margin:0}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin:36px 0 4px}
+
+/* map */
+.map{position:relative;aspect-ratio:390/270;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--sky-wash)}
+.map svg.base{position:absolute;inset:0;width:100%;height:100%;display:block}
+.pin{position:absolute;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;border:1.5px solid var(--sky);background:#fff;color:var(--sky);display:grid;place-items:center;padding:0;box-shadow:0 2px 6px rgba(20,50,100,.12)}
+.pin::before{content:"";position:absolute;inset:-4px}
+.pin.hot{box-shadow:0 0 0 7px rgba(0,100,224,.16),0 2px 6px rgba(20,50,100,.12)}
+.pin.mine{background:var(--sky-pale)}
+.pin:hover{background:var(--sky-wash)}
+.badge{position:absolute;top:-6px;right:-6px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:var(--sky);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;border:1.5px solid #fff;font-variant-numeric:tabular-nums}
+.you{position:absolute;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:var(--ink);border:3px solid #fff;box-shadow:0 0 0 1px var(--line)}
+.you-label{position:absolute;transform:translate(-50%,14px);font-size:11px;font-weight:600;color:var(--ink)}
+
+/* active moment */
+.hero-panel{display:flex;align-items:center;gap:20px;padding:20px;border-radius:16px;background:var(--sky-wash);border:1px solid var(--sky-pale)}
+.compass text{font:700 10px var(--sans);fill:var(--ink-2)}
+.bar{height:6px;border-radius:99px;background:var(--sky-pale);overflow:hidden}
+.bar span{display:block;height:100%;background:var(--sky);border-radius:99px}
+.quote{font-family:var(--serif);font-style:italic;font-size:19px;line-height:1.4;color:var(--ink)}
+.facts{display:flex;flex-direction:column}
+.fact{display:flex;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid var(--line);font-size:15px}
+.fact:last-child{border-bottom:0}
+.fact span:first-child{color:var(--ink-2)}
+.fact span:last-child{font-weight:600;text-align:right;overflow-wrap:anywhere}
+.sticky{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px 20px 16px;display:flex;flex-direction:column;gap:4px}
+
+/* progress */
+.steps{display:flex;gap:6px;width:72px}
+.steps i{flex:1;height:4px;border-radius:99px;background:var(--sky-pale)}
+.steps i.on{background:var(--sky)}
+
+/* success */
+.okmark{width:72px;height:72px;border-radius:50%;background:var(--sky-pale);color:var(--sky);display:grid;place-items:center}
+
+/* nav */
+.nav{display:flex;border-top:1px solid var(--line);background:#fff;flex:none}
+.nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:62px;border:0;background:none;font-size:11px;font-weight:600;color:var(--ink-2)}
+.nav button[aria-current="page"]{color:var(--sky)}
+.nav button:hover{background:var(--sky-wash)}
+
+/* moments */
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;min-height:46px;border:0;background:none;font-weight:600;color:var(--ink-2);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--sky);border-bottom-color:var(--sky)}
+.entry{padding:24px 0;border-bottom:1px solid var(--line)}
+.entry:last-child{border-bottom:0}
+.ph{position:relative;aspect-ratio:16/10;border-radius:14px;background-size:cover;background-position:center;overflow:hidden;background-color:var(--sky-pale)}
+.ph small{position:absolute;left:10px;bottom:8px;font-size:10px;font-weight:700;color:#fff;letter-spacing:.08em;background:rgba(17,17,17,.5);padding:3px 7px;border-radius:99px}
+.ph.big{aspect-ratio:4/3}
+.lookchip{position:absolute;left:12px;bottom:12px;display:flex;align-items:center;gap:8px;background:#fff;color:var(--ink);border-radius:99px;padding:8px 14px 8px 10px;font-weight:700;font-size:14px;box-shadow:0 2px 8px rgba(20,50,100,.18)}
+.lookchip svg{color:var(--sky)}
+.strip{display:flex;gap:6px;margin-top:6px}
+.strip i{display:block;width:56px;height:56px;border-radius:10px;background-size:cover;background-position:center;background-color:var(--sky-pale)}
+.meta{display:flex;align-items:center;gap:8px;margin-top:14px;font-weight:600}
+.meta .ic{color:var(--sky)}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin:20px 0 8px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px 5px;text-align:center}
+.cal .wd{font-size:12px;font-weight:600;color:var(--ink-2);padding:8px 0 2px}
+.dayc{position:relative;display:block;width:100%;aspect-ratio:1;border:0;padding:0;background:none;border-radius:9px;overflow:hidden;font-variant-numeric:tabular-nums;color:var(--ink)}
+.dayc.off{display:grid;place-items:center;font-size:14px;color:#252B33;background:var(--sky-wash)}
+.dayc.today{outline:2px solid var(--ink);outline-offset:1px}
+.dayc.has{background:var(--sky-pale)}
+.dayc.has:hover{filter:brightness(.96)}
+.thumbs{position:absolute;inset:0;display:grid;gap:1px;background:#fff}
+.thumbs i{display:block;background-size:cover;background-position:center;background-color:var(--sky-pale)}
+.t1{grid-template:1fr/1fr}.t2{grid-template:1fr/1fr 1fr}.t3,.t4{grid-template:1fr 1fr/1fr 1fr}.t3 i:first-child{grid-row:1/3}
+.dnum{position:absolute;left:3px;top:3px;min-width:16px;height:16px;padding:0 4px;border-radius:99px;background:rgba(17,17,17,.62);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;line-height:1}
+.legend{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);margin-top:20px}
+.legend i{width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,#FFB36B,#1877F2)}
+
+.toast{position:absolute;left:50%;bottom:78px;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:14px;font-weight:500;padding:11px 18px;border-radius:999px;max-width:calc(100% - 40px);text-align:center;z-index:5;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.demo-box{border:1px dashed #B9DDF8;border-radius:14px;padding:16px;background:var(--sky-wash)}
+.demo-tag{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--sky-deep)}
+.note-line{display:flex;gap:10px;font-size:13px;color:var(--ink-2);align-items:flex-start}
+.note-line svg{flex:none;color:var(--sky);margin-top:1px}
+</style>
+
+<div class="stage">
+  <div class="frame" id="frame">
+    <main class="screen" id="screen" tabindex="-1"></main>
+    <nav class="nav" id="nav" aria-label="Main" hidden></nav>
+    <div class="toast" id="toast" role="status" hidden></div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- constants ---------- */
+var TODAY="2026-10-07", EXPIRY=30;
+var CATS={sunset:"Sunset",sunrise:"Sunrise",rainbow:"Rainbow",clouds:"Beautiful Clouds",moon:"Moon",other:"Other"};
+var CAT_ORDER=["sunset","sunrise","rainbow","clouds","moon","other"];
+/* Demo photos: small generated sky scenes, so the archive looks real before any upload exists. */
+var SKY={sunset:["#2E3F86","#D9708A","#FFB36B"],sunrise:["#4F78C9","#F2A98C","#FFE0A0"],rainbow:["#6E9AD3","#A9C8EA","#D9E9F7"],clouds:["#5F93DC","#A9C7F0","#E4EEFB"],moon:["#141C45","#2C3B7E","#5A6FB0"],other:["#3F67B5","#7FA4DC","#CFE0F6"]};
+function hash(t){var h=7;for(var i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))%9973;return h;}
+function rnd(seed){var x=Math.sin(seed*127.1)*43758.5453;return x-Math.floor(x);}
+var photoCache={};
+function photoUri(cat,seed){
+ var key=cat+seed;if(photoCache[key])return photoCache[key];
+ var c=SKY[cat],r1=rnd(seed),r2=rnd(seed+1),r3=rnd(seed+2),r4=rnd(seed+3);
+ var hz=108+Math.round(r1*10),sx=50+Math.round(r2*100),b="";
+ b+='<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+c[0]+'"/><stop offset=".62" stop-color="'+c[1]+'"/><stop offset="1" stop-color="'+c[2]+'"/></linearGradient><mask id="m"><rect width="200" height="200" fill="#fff"/><circle cx="'+(sx+9)+'" cy="'+(70-4)+'" r="15" fill="#000"/></mask></defs>';
+ b+='<rect width="200" height="200" fill="url(#g)"/>';
+ function cloud(x,y,w,o){return '<g fill="#fff" opacity="'+o+'"><ellipse cx="'+x+'" cy="'+y+'" rx="'+w+'" ry="'+(w*.22)+'"/><ellipse cx="'+(x+w*.35)+'" cy="'+(y-w*.14)+'" rx="'+(w*.5)+'" ry="'+(w*.2)+'"/><ellipse cx="'+(x-w*.4)+'" cy="'+(y-w*.08)+'" rx="'+(w*.4)+'" ry="'+(w*.16)+'"/></g>';}
+ if(cat==="sunset"||cat==="sunrise"){
+  b+='<circle cx="'+sx+'" cy="'+(hz-4)+'" r="'+(34+Math.round(r3*8))+'" fill="#FFE9B8" opacity=".22"/><circle cx="'+sx+'" cy="'+(hz-4)+'" r="'+(15+Math.round(r3*5))+'" fill="#FFF1CF"/>';
+  b+=cloud(40+r4*40,84,38,.28)+cloud(130+r3*40,70,44,.22);
+ }else if(cat==="rainbow"){
+  var cols=["#E96A5C","#F2B84B","#7CC27A","#5BA6E3","#8C7BD8"];
+  cols.forEach(function(col,i){b+='<path d="M'+(sx-78+i*4)+' '+(hz+8)+'A'+(78-i*4)+' '+(78-i*4)+' 0 0 1 '+(sx+78-i*4)+' '+(hz+8)+'" fill="none" stroke="'+col+'" stroke-width="4" opacity=".72"/>';});
+  b+=cloud(46,78,40,.9)+cloud(156,92,34,.85);
+ }else if(cat==="clouds"){
+  b+=cloud(52+r4*20,70,46,.9)+cloud(140,56+r3*10,52,.85)+cloud(96,96,60,.8)+cloud(170,100,36,.75);
+ }else if(cat==="moon"){
+  for(var i=0;i<18;i++){b+='<circle cx="'+Math.round(rnd(seed+i*5)*200)+'" cy="'+Math.round(rnd(seed+i*7)*95)+'" r="'+(0.6+rnd(seed+i)*0.9)+'" fill="#fff" opacity="'+(0.5+rnd(seed+i*3)*0.5)+'"/>';}
+  b+='<circle cx="'+(sx+9)+'" cy="'+(70-4)+'" r="26" fill="#9FB4F0" opacity=".14"/><circle cx="'+sx+'" cy="70" r="16" fill="#F7F2DC" mask="url(#m)"/>';
+ }else{
+  for(var k=0;k<7;k++){var ang=-40+k*13+r4*8,x2=sx+Math.tan(ang*Math.PI/180)*120;b+='<polygon points="'+sx+',18 '+(x2-6)+',150 '+(x2+6)+',150" fill="#fff" opacity=".16"/>';}
+  b+=cloud(sx,30,42,.88)+cloud(sx+54,38,30,.8);
+ }
+ if(r4>.5&&cat!=="rainbow"&&cat!=="other"){
+  b+='<rect y="'+hz+'" width="200" height="'+(200-hz)+'" fill="'+c[0]+'" opacity=".92"/><g stroke="#fff" opacity=".28" stroke-width="1.2">'+[0,1,2,3].map(function(i){return '<line x1="'+(sx-24+i*3)+'" x2="'+(sx+24-i*3)+'" y1="'+(hz+8+i*9)+'" y2="'+(hz+8+i*9)+'"/>';}).join("")+'</g>';
+ }else{
+  b+='<path d="M0 '+(hz+6)+'Q40 '+(hz-16)+' 80 '+(hz+2)+'T160 '+(hz-6)+'T200 '+(hz+4)+'V200H0Z" fill="#141B3C" opacity=".94"/>';
+ }
+ var svg='<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">'+b+'</svg>';
+ return photoCache[key]="url('data:image/svg+xml,"+encodeURIComponent(svg).replace(/'/g,"%27")+"')";
+}
+function photosOf(m){if(m.photoData)return [m.photoData];var n=m.photos||1,out=[],h=hash(m.id);for(var i=0;i<n;i++)out.push(photoUri(m.cat,h*7+i*13));return out;}
+function photosOnDay(iso){var out=[];S.moments.forEach(function(m){if(m.date===iso)out=out.concat(photosOf(m));});return out;}
+var ICONS={
+ sunset:'<path d="M3 18h18"/><path d="M7 18a5 5 0 0 1 10 0"/><path d="M12 5v4M10 7l2 2 2-2"/><path d="M4.6 12.2l1.4 1.4M19.4 12.2L18 13.6"/>',
+ sunrise:'<path d="M3 18h18"/><path d="M7 18a5 5 0 0 1 10 0"/><path d="M12 9V5M10 7l2-2 2 2"/><path d="M4.6 12.2l1.4 1.4M19.4 12.2L18 13.6"/>',
+ rainbow:'<path d="M3 18a9 9 0 0 1 18 0"/><path d="M6.5 18a5.5 5.5 0 0 1 11 0"/><path d="M10 18a2 2 0 0 1 4 0"/>',
+ clouds:'<path d="M7.5 18a3.5 3.5 0 0 1-.4-6.98 5.5 5.5 0 0 1 10.6 1.2A3.4 3.4 0 0 1 17 18z"/>',
+ moon:'<path d="M20 14.6A8 8 0 1 1 9.4 4a6.4 6.4 0 0 0 10.6 10.6z"/>',
+ other:'<path d="M12 3c.6 4.6 1.9 7.4 9 9-7.1 1.6-8.4 4.4-9 9-.6-4.6-1.9-7.4-9-9 7.1-1.6 8.4-4.4 9-9z"/>'
+};
+var UI={
+ back:'<path d="M15 5l-7 7 7 7"/>',
+ chev:'<path d="M9 5l7 7-7 7"/>',
+ left:'<path d="M15 5l-7 7 7 7"/>',
+ pin:'<path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+ lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+ check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+ camera:'<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>',
+ home:'<path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/>',
+ moments:'<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M21 16l-5-5-8 8"/>',
+ account:'<circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4-6 8-6s7 2 8 6"/>',
+ shield:'<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2.2 2.2L15.5 10"/>',
+ gear:'<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>',
+ out:'<path d="M10 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="M15 8l4 4-4 4M19 12H9"/>',
+ info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/>'
+};
+function svg(path,size,sw,cls){size=size||24;return '<svg class="'+(cls||'ic')+'" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||1.6)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+path+'</svg>';}
+function ci(cat,size){return svg(ICONS[cat],size||24,1.6);}
+function ui(name,size,sw){return svg(UI[name],size||24,sw||1.8);}
+var STAR=svg(ICONS.other,22,1.7);
+
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+
+/* ---------- state ---------- */
+var S={
+ screen:"login", flow:"",
+ user:{name:"CloudDrifter482",ver:"none"},
+ settings:{exact:false,alerts:true,radius:5},
+ activeId:null, selDay:null, momentsTab:"feed", cal:{y:2026,m:9},
+ draft:{cat:null,intensity:"Beautiful",dir:"West",landmark:"",radius:5,exact:false,photo:""},
+ lastNudge:null, saved:false,
+ nudges:[
+  {id:"n1",demoPhoto:true,cat:"sunset",intensity:"Look now",dir:"West",radius:5,place:"St Kilda Beach",landmark:"Palais Theatre",age:3,seen:12,user:"GoldenCloud145",verified:true,x:31,y:68,km:1.8,note:"Deep orange along the whole horizon. It is moving fast."},
+  {id:"n2",cat:"clouds",intensity:"Wow",dir:"West",radius:5,place:"Brighton Beach",landmark:"Bathing boxes",age:5,seen:7,user:"PeachSky91",verified:false,x:46,y:84,km:4.6,note:"Layers of pink cloud lit from underneath."},
+  {id:"n3",demoPhoto:true,cat:"rainbow",intensity:"Look now",dir:"East",radius:2,place:"Footscray Park",landmark:"The rotunda",age:8,seen:9,user:"HazyHorizon27",verified:false,x:12,y:27,km:6.2,note:"A full arch over the river after the shower."},
+  {id:"n4",demoPhoto:true,cat:"sunset",intensity:"Wow",dir:"West",radius:10,place:"Williamstown",landmark:"Gem Pier",age:11,seen:5,user:"AmberTide73",verified:true,x:9,y:46,km:9.1,note:"The sun is sitting right on the water."},
+  {id:"n5",cat:"moon",intensity:"Beautiful",dir:"East",radius:5,place:"Collingwood",landmark:"Abbotsford Convent",age:14,seen:3,user:"QuietDusk64",verified:false,x:53,y:30,km:2.9,note:"A thin crescent just above the rooftops."},
+  {id:"n6",demoPhoto:true,cat:"other",intensity:"Wow",dir:"Above",radius:5,place:"Docklands",landmark:"Webb Bridge",age:17,seen:6,user:"OpalSkies58",verified:false,x:27,y:36,km:3.4,note:"Light rays fanning through a gap in the cloud."},
+  {id:"n7",cat:"clouds",intensity:"Beautiful",dir:"South",radius:5,place:"Port Melbourne",landmark:"Station Pier",age:19,seen:2,user:"SoftNimbus210",verified:false,x:22,y:52,km:5.0,note:"Soft layers of cloud drifting over the bay."},
+  {id:"n8",demoPhoto:true,cat:"sunrise",intensity:"Beautiful",dir:"East",radius:10,place:"Dandenong Ranges",landmark:"SkyHigh lookout",age:20,seen:4,user:"MoonWalker308",verified:true,x:86,y:38,km:8.7,note:"Gold light starting to spill over the ridge."}
+ ],
+ moments:[
+  {id:"m1",date:"2026-10-06",time:"7:48 pm",cat:"sunset",photos:3,place:"Williamstown Beach",dir:"West",landmark:"Gem Pier",note:"Orange band right at the horizon. Stayed until the last light went."},
+  {id:"m7",date:"2026-10-06",time:"9:10 pm",cat:"moon",photos:2,place:"Williamstown Beach",dir:"East",landmark:"Gem Pier",note:"Moon rising over the bay once the colour had faded."},
+  {id:"m2",date:"2026-10-03",time:"6:05 am",cat:"sunrise",photos:4,place:"Brighton Beach",dir:"East",landmark:"Bathing boxes",note:"Cold and quiet. Nobody else on the sand."},
+  {id:"m3",date:"2026-09-28",time:"4:30 pm",cat:"rainbow",photos:2,place:"Fitzroy Gardens",dir:"East",landmark:"The conservatory",note:"Double rainbow after the hail. It lasted about six minutes."},
+  {id:"m4",date:"2026-09-21",time:"8:20 pm",cat:"moon",photos:1,place:"Yarra Bend Park",dir:"East",landmark:"Collingwood Children's Farm",note:"Crescent moon sitting just above the treeline."},
+  {id:"m5",date:"2026-09-14",time:"5:55 pm",cat:"clouds",photos:5,place:"Dandenong Ranges",dir:"West",landmark:"SkyHigh lookout",note:"Cloud layers stacked like paper over the city."},
+  {id:"m6",date:"2026-09-09",time:"7:02 pm",cat:"other",photos:2,place:"Docklands",dir:"Above",landmark:"Webb Bridge",note:"Light rays fanning through a gap in the cloud."}
+ ]
+};
+
+/* ---------- helpers ---------- */
+function nudgePhoto(n){return n.photoData||(n.demoPhoto?photoUri(n.cat,hash(n.id)*5+3):null);}
+function dirArrow(d){var r={North:0,East:90,South:180,West:270,Above:0}[d]||0;return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform:rotate('+r+'deg)"><path d="M12 20V5M6 11l6-6 6 6"/></svg>';}
+function nudgeById(id){return S.nudges.filter(function(n){return n.id===id;})[0];}
+function sorted(){return S.nudges.slice().sort(function(a,b){return a.age-b.age;});}
+function ago(n){return n.age<1?"Just now":n.age+" min ago";}
+function left(n){return Math.max(0,EXPIRY-n.age);}
+function title(n){return CATS[n.cat]+" at "+n.place;}
+function lookText(d){return d==="Above"?"Look up":"Look "+d.toLowerCase();}
+function fmtDate(iso,long){var d=new Date(iso+"T12:00:00");return d.toLocaleDateString("en-AU",long?{weekday:"long",day:"numeric",month:"long"}:{weekday:"short",day:"numeric",month:"short"});}
+function verified(){return S.user.ver==="verified";}
+function badge(){return '<span class="vbadge" role="img" aria-label="Identity verified">'+svg(UI.check,10,3.2)+'</span>';}
+function nameHtml(name,v){return esc(name)+(v?" "+badge():"");}
+function pillFor(i){return '<span class="pill '+(i==="Look now"?"look":i==="Wow"?"wow":"nice")+'">'+esc(i)+'</span>';}
+var STATUS={none:"Not verified",pending:"Pending",verified:"Verified",rejected:"Rejected"};
+function statusPill(v){return '<span class="pill st-'+v+'">'+STATUS[v]+'</span>';}
+function genName(){
+ var a=["Cloud","Golden","Peach","Amber","Soft","Quiet","Opal","Hazy","Misty","Rosy"],b=["Drifter","Sky","Dusk","Glow","Tide","Horizon","Nimbus","Gazer","Light","Cloud"];
+ var r=function(l){return l[Math.floor(Math.random()*l.length)];};
+ var n=a.length&&r(a),m=r(b); if(n===m)m="Drifter";
+ return n+m+(10+Math.floor(Math.random()*990));
+}
+function backBtn(go,label){return '<button class="iconbtn" data-go="'+go+'" aria-label="'+(label||"Back")+'">'+ui("back",24,2)+'</button>';}
+function seg(items,cur,action){return '<div class="seg" role="group">'+items.map(function(it){var v=it.v!==undefined?it.v:it,l=it.l!==undefined?it.l:it;return '<button type="button" class="seg-opt" data-action="'+action+'" data-v="'+esc(v)+'" aria-pressed="'+(String(cur)===String(v))+'">'+esc(l)+'</button>';}).join("")+'</div>';}
+function toggle(id,on,labelId){return '<button type="button" class="switch" id="'+id+'" role="switch" aria-checked="'+on+'" aria-labelledby="'+labelId+'" data-action="'+id+'"></button>';}
+function rowBtn(attrs,icon,t,s,right){return '<button class="row" '+attrs+'><span class="tile">'+icon+'</span><span class="grow"><span class="t">'+t+'</span>'+(s?'<span class="s">'+s+'</span>':'')+'</span>'+(right||'<span class="chev">'+ui("chev",20,2)+'</span>')+'</button>';}
+
+/* ---------- map ---------- */
+var MAP_SVG='<svg class="base" viewBox="0 0 390 270" preserveAspectRatio="xMidYMid slice" aria-hidden="true">'+
+ '<rect width="390" height="270" fill="#F5FAFF"/>'+
+ '<g stroke="#FFFFFF" stroke-width="2.4" fill="none" stroke-linecap="round">'+
+ '<path d="M0 58L390 30"/><path d="M0 108L390 84"/><path d="M0 160L390 140"/><path d="M0 214L390 196"/>'+
+ '<path d="M58 0L90 270"/><path d="M128 0L163 270"/><path d="M198 0L234 270"/><path d="M268 0L304 270"/><path d="M338 0L368 270"/></g>'+
+ '<path d="M390 120C330 104 300 142 250 118C210 100 190 126 150 110C120 100 100 92 70 100" stroke="#D3EAFC" stroke-width="7" fill="none" stroke-linecap="round"/>'+
+ '<path d="M0 140C40 150 70 178 98 205C120 226 150 238 188 252C205 258 215 264 222 270L0 270Z" fill="#E7F4FF"/>'+
+ '<path d="M0 140C40 150 70 178 98 205C120 226 150 238 188 252C205 258 215 264 222 270" stroke="#C5E4FB" stroke-width="1.5" fill="none"/>'+
+ '<text x="18" y="250" font-family="Playfair Display, Georgia, serif" font-style="italic" font-size="12" fill="#8791A0">Port Phillip Bay</text></svg>';
+function mapView(){
+ var pins=S.nudges.map(function(n){
+  return '<button class="pin'+(n.intensity==="Look now"?" hot":"")+(n.mine?" mine":"")+'" style="left:'+n.x+'%;top:'+n.y+'%" data-action="open" data-id="'+n.id+'" aria-label="'+esc(title(n))+', '+n.seen+' can see it">'+ci(n.cat,20)+'<span class="badge">'+n.seen+'</span></button>';
+ }).join("");
+ return '<div class="map" role="group" aria-label="Map of active SkyNudges near you">'+MAP_SVG+'<span class="you" style="left:40%;top:42%"></span><span class="you-label" style="left:40%;top:42%">You</span>'+pins+'</div>';
+}
+
+/* ---------- compass ---------- */
+function compass(dir){
+ var inner;
+ if(dir==="Above"){
+  inner='<path d="M48 68V28M34 42l14-14 14 14" stroke="#0064E0" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+ }else{
+  var rot={North:0,East:90,South:180,West:270}[dir]||0;
+  inner='<text x="48" y="17" text-anchor="middle">N</text><text x="81" y="52" text-anchor="middle">E</text><text x="48" y="87" text-anchor="middle">S</text><text x="15" y="52" text-anchor="middle">W</text>'+
+   '<g transform="rotate('+rot+' 48 48)"><path d="M48 22L55 54L48 49L41 54Z" fill="#0064E0"/></g><circle cx="48" cy="48" r="3" fill="#fff" stroke="#0064E0" stroke-width="1.5"/>';
+ }
+ return '<svg class="compass" width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="'+esc(lookText(dir))+'"><circle cx="48" cy="48" r="44" fill="#fff" stroke="#E6EAF0" stroke-width="1.5"/>'+inner+'</svg>';
+}
+
+/* ---------- views ---------- */
+var V={};
+
+V.login=function(){
+ return '<div class="pad stack" style="--s:28px;padding-top:56px">'+
+ '<div class="brand">'+STAR+'<span>SkyNudge</span></div>'+
+ '<div class="stack" style="--s:12px"><h1 class="h1">Look up before it is gone.</h1><p class="sub">Someone nearby saw something beautiful. Log in to see what is happening in the sky around you.</p></div>'+
+ '<form data-form="login" class="stack" style="--s:14px">'+
+ '<label class="field"><span>Email</span><input class="input" id="login-email" type="email" autocomplete="email" placeholder="you@example.com" value="demo@skynudge.app"></label>'+
+ '<label class="field"><span>Password</span><input class="input" id="login-pw" type="password" autocomplete="current-password" placeholder="Your password" value="demo-password"></label>'+
+ '<button class="btn btn-primary" type="submit" style="margin-top:8px">Log in</button></form>'+
+ '<p class="small" style="text-align:center">New here? <button class="btn-text" style="border:0;background:none;font-weight:600;font-size:14px;color:var(--sky-deep);padding:0 4px;min-height:44px" data-go="create">Create an account</button></p>'+
+ '<p class="small muted" style="text-align:center">Demo with sample data. Nothing is saved.</p></div>';
+};
+
+V.create=function(){
+ return '<div class="topbar">'+backBtn("login")+'</div><div class="pad stack" style="--s:24px">'+
+ '<div class="stack" style="--s:10px"><h1 class="h2">Create your account</h1><p class="sub">You will get an anonymous name. Nobody sees your real one.</p></div>'+
+ '<form data-form="create" class="stack" style="--s:14px">'+
+ '<label class="field"><span>Email</span><input class="input" id="ca-email" type="email" autocomplete="email" placeholder="you@example.com"></label>'+
+ '<label class="field"><span>Password</span><input class="input" id="ca-pw" type="password" autocomplete="new-password" placeholder="At least 8 characters"></label>'+
+ '</form>'+
+ '<hr class="divider"><div class="stack" style="--s:12px"><p class="h3">How would you like to continue?</p>'+
+ '<button class="btn btn-primary" data-action="create-verify">Verify my account</button>'+
+ '<button class="btn btn-line" data-action="create-general">Continue with a general account</button>'+
+ '<p class="small">Verification is optional. You can do it later from your account.</p></div></div>';
+};
+
+V.verifyIntro=function(){
+ var back=S.flow==="create"?"create":"account";
+ return '<div class="topbar">'+backBtn(back)+'</div><div class="pad stack" style="--s:24px">'+
+ '<div class="stack" style="--s:10px"><p class="eyebrow">Optional</p><h1 class="h2">What verification means</h1></div>'+
+ '<div class="rows">'+
+  '<div class="row" style="align-items:flex-start"><span class="tile">'+ui("shield",22)+'</span><span class="grow"><span class="t">An identity check</span><span class="s" style="font-size:14px">We check your full legal name and phone number once to confirm you are a real person.</span></span></div>'+
+  '<div class="row" style="align-items:flex-start"><span class="tile">'+ui("lock",22)+'</span><span class="grow"><span class="t">Your details stay private</span><span class="s" style="font-size:14px">Your name and number are never shown to anyone. You keep your anonymous username.</span></span></div>'+
+  '<div class="row" style="align-items:flex-start"><span class="tile">'+ui("check",22,2.2)+'</span><span class="grow"><span class="t">A small check beside your name</span><span class="s" style="font-size:14px">The badge only means the identity check was completed. It does not guarantee anyone\'s behaviour or that a SkyNudge is accurate.</span></span></div>'+
+ '</div>'+
+ '<div class="stack" style="--s:6px"><button class="btn btn-primary" data-go="verifyForm">Continue</button><button class="btn btn-text" data-action="verify-skip">Not now</button></div></div>';
+};
+
+V.verifyForm=function(){
+ return '<div class="topbar">'+backBtn("verifyIntro")+'</div><div class="pad stack" style="--s:22px">'+
+ '<div class="stack" style="--s:10px"><h1 class="h2">Verify your account</h1><p class="sub">This takes a minute. Only our team sees these details.</p></div>'+
+ '<form id="vform" data-form="verify" class="stack" style="--s:16px" novalidate>'+
+ '<label class="field"><span>Full legal name</span><input class="input" id="v-name" autocomplete="name" placeholder="As shown on your ID"></label>'+
+ '<label class="field"><span>Phone number</span><input class="input" id="v-phone" type="tel" autocomplete="tel" placeholder="04xx xxx xxx"></label>'+
+ '<label class="check"><input type="checkbox" id="v-consent"><span>I agree to SkyNudge checking my name and phone number to confirm my identity. This information is never shown publicly.</span></label>'+
+ '<button class="btn btn-primary" id="v-submit" type="submit" disabled>Submit verification</button></form></div>';
+};
+
+V.welcome=function(){
+ var p=S.user.ver==="pending"?'<div class="note-line">'+ui("info",18,1.8)+'<span>Your verification is pending. We will review your details.</span></div>':'';
+ return '<div class="pad stack" style="--s:28px;padding-top:72px">'+
+ '<div class="okmark">'+STAR.replace('width="22" height="22"','width="32" height="32"')+'</div>'+
+ '<div class="stack" style="--s:12px"><p class="eyebrow">Welcome</p><h1 class="h1">'+nameHtml(S.user.name,verified())+'</h1><p class="sub">That is the name other people see. Your real name stays private.</p></div>'+p+
+ '<button class="btn btn-primary" data-go="home">See the sky near me</button></div>';
+};
+
+V.home=function(){
+ var list=sorted().map(function(n){
+  return '<button class="row" data-action="open" data-id="'+n.id+'"><span class="tile">'+ci(n.cat,24)+'</span><span class="grow"><span class="t">'+esc(title(n))+'</span><span class="s">'+esc(lookText(n.dir))+' · '+n.km.toFixed(1)+' km · '+ago(n)+'</span></span><span style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'+pillFor(n.intensity)+'<span class="small" style="font-variant-numeric:tabular-nums">'+n.seen+' watching</span></span></button>';
+ }).join("");
+ return '<div class="topbar plain"><div class="brand">'+STAR+'<span>SkyNudge</span></div>'+
+ '<button class="userchip" data-go="account" aria-label="Account">'+nameHtml(S.user.name,verified())+'</button></div>'+
+ '<div class="pad" style="padding-top:20px">'+
+ '<p class="small" style="display:flex;align-items:center;gap:6px">'+ui("pin",16,1.8)+'Near Melbourne CBD · approximate area</p>'+
+ '<div class="stack" style="--s:12px;margin-top:22px"><p class="eyebrow"><span class="dot-live"></span>Right now in Melbourne</p>'+
+ '<h1 class="h1">Something beautiful is happening.</h1>'+
+ '<p class="sub">Tap a glow. Then put your phone down and look up.</p></div>'+
+ '<div style="margin-top:24px">'+mapView()+'</div>'+
+ '<button class="btn btn-grad" style="margin-top:18px" data-action="start-nudge">Nudge the Sky</button>'+
+ '<div class="section-head"><h2 class="h3" style="font-size:19px">Currently Near You</h2><span class="small">'+S.nudges.length+' active</span></div>'+
+ '<div class="rows">'+list+'</div>'+
+ '<p class="small muted" style="margin-top:20px;text-align:center">SkyNudges disappear after about '+EXPIRY+' minutes.</p></div>';
+};
+
+V.active=function(){
+ var n=nudgeById(S.activeId); if(!n){return V.home();}
+ var pct=Math.round(left(n)/EXPIRY*100),img=nudgePhoto(n);
+ var cta=n.seenByMe?
+  '<button class="btn btn-done" disabled style="opacity:1;color:var(--sky-deep);background:var(--sky-wash)">'+ui("check",20,2.4)+' You can see it too</button>':
+  '<button class="btn btn-primary" data-action="seen" data-id="'+n.id+'">I can see it too</button>';
+ return '<div class="topbar">'+backBtn("home")+'<span style="padding-right:12px">'+pillFor(n.intensity)+'</span></div><div class="pad stack" style="--s:20px;padding-bottom:12px">'+
+ '<div class="stack" style="--s:8px"><h1 class="h2">'+esc(title(n))+'</h1>'+
+ '<p class="small">'+nameHtml(n.user,n.verified)+' · '+ago(n)+'</p></div>'+
+ (img?
+  '<div class="stack" style="--s:12px"><div class="ph big" style="background-image:'+img+'" role="img" aria-label="Photo shared by '+esc(n.user)+'"><span class="lookchip">'+dirArrow(n.dir)+esc(lookText(n.dir))+'</span></div><p class="small">Roughly '+n.km.toFixed(1)+' km from you, around '+esc(n.place)+'.</p></div>':
+  '<div class="hero-panel">'+compass(n.dir)+'<div class="stack" style="--s:4px;min-width:0"><p class="serif" style="font-size:26px;line-height:1.1">'+esc(lookText(n.dir))+'</p><p class="small">Roughly '+n.km.toFixed(1)+' km from you, around '+esc(n.place)+'.</p></div></div>')+
+ '<p class="quote">“'+esc(n.note)+'”</p>'+
+ '<div class="stack" style="--s:8px"><div style="display:flex;justify-content:space-between" class="small"><span>Time left</span><span style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink)">'+left(n)+' min</span></div>'+
+ '<div class="bar" role="progressbar" aria-valuenow="'+left(n)+'" aria-valuemin="0" aria-valuemax="'+EXPIRY+'" aria-label="Time left"><span style="width:'+pct+'%"></span></div></div>'+
+ '<div class="facts"><div class="fact"><span>Landmark</span><span>'+esc(n.landmark||"None given")+'</span></div>'+
+ '<div class="fact"><span>Can see it</span><span style="font-variant-numeric:tabular-nums">'+n.seen+' people</span></div>'+
+ '<div class="fact"><span>Shared with</span><span>Within '+n.radius+' km</span></div></div>'+
+ '<p class="small" style="text-align:center">Then put your phone down and look up.</p></div>'+
+ '<div class="sticky">'+cta+'<button class="btn btn-text" data-action="start-nudge">Nudge the sky yourself</button></div>';
+};
+
+V.nudge1=function(){
+ var d=S.draft;
+ var cards=CAT_ORDER.map(function(c){return '<button class="choice" data-action="pick-cat" data-v="'+c+'" aria-pressed="'+(d.cat===c)+'">'+ci(c,30)+'<b>'+CATS[c]+'</b></button>';}).join("");
+ return '<div class="topbar">'+backBtn("home","Close")+'<div class="steps" style="margin-right:12px" aria-label="Step 1 of 2"><i class="on"></i><i></i></div></div>'+
+ '<div class="pad stack" style="--s:24px"><div class="stack" style="--s:8px"><p class="eyebrow">Step 1 of 2</p><h1 class="h2">What are you seeing?</h1></div>'+
+ '<div class="choice-grid">'+cards+'</div>'+
+ '<div><span class="label">How strong is it?</span>'+seg(["Beautiful","Wow","Look now"],d.intensity,"pick-int")+'</div></div>'+
+ '<div class="sticky"><button class="btn btn-primary" data-go="nudge2"'+(d.cat?'':' disabled')+'>Next</button></div>';
+};
+
+V.nudge2=function(){
+ var d=S.draft;
+ return '<div class="topbar">'+backBtn("nudge1")+'<div class="steps" style="margin-right:12px" aria-label="Step 2 of 2"><i class="on"></i><i class="on"></i></div></div>'+
+ '<div class="pad stack" style="--s:26px"><div class="stack" style="--s:8px"><p class="eyebrow">Step 2 of 2</p><h1 class="h2">Help people find it</h1></div>'+
+ '<div class="stack" style="--s:8px"><span class="label" style="margin:0">Approximate location</span>'+
+ '<div class="row" style="min-height:64px;border:1px solid var(--line);border-radius:12px;padding:10px 14px"><span class="tile" style="width:38px;height:38px">'+ui("pin",20)+'</span><span class="grow"><span class="t" style="font-size:15px">Near Melbourne CBD</span><span class="s">People see the area, not your exact spot.</span></span></div></div>'+
+ '<div><span class="label">Which direction?</span>'+seg(["West","East","North","South","Above"],d.dir,"pick-dir")+'</div>'+
+ '<label class="field"><span>Landmark <em>(optional)</em></span><input class="input" id="landmark" data-bind="landmark" placeholder="e.g. Palais Theatre" value="'+esc(d.landmark)+'"></label>'+
+ '<div><span class="label">Photo <em style="font-weight:400;color:var(--ink-2)">(optional)</em></span>'+
+ '<input type="file" id="photo" accept="image/*" hidden>'+
+ '<button type="button" class="btn btn-line" data-action="pick-photo">'+ui("camera",20)+'<span id="photo-name">'+(d.photo?esc(d.photo):"Add a photo")+'</span></button>'+
+ (d.photoData?'<div class="ph" style="background-image:'+d.photoData+';margin-top:10px" role="img" aria-label="Your photo"></div>':'')+'<p class="small" style="margin-top:8px">Location details are removed from photos.</p></div>'+
+ '<div><span class="label">Who should be nudged?</span>'+seg([{v:2,l:"2 km"},{v:5,l:"5 km"},{v:10,l:"10 km"}],d.radius,"pick-radius")+'</div>'+
+ '<div class="stack" style="--s:10px"><div style="display:flex;align-items:center;justify-content:space-between;gap:16px"><div><span class="t" id="exact-l" style="font-weight:600;display:block">Share my exact location</span><span class="small">Off by default.</span></div>'+toggle("toggle-exact-draft",d.exact,"exact-l")+'</div>'+
+ (d.exact?'<div class="note-line">'+ui("info",18,1.8)+'<span>Anyone within '+d.radius+' km will see your exact spot on the map.</span></div>':'')+'</div></div>'+
+ '<div class="sticky"><button class="btn btn-primary" data-action="send-nudge">Send SkyNudge</button></div>';
+};
+
+V.success=function(){
+ var n=S.lastNudge; if(!n){return V.home();}
+ return '<div class="pad stack" style="--s:26px;padding-top:64px"><div class="okmark">'+ui("check",34,2.2)+'</div>'+
+ '<div class="stack" style="--s:12px"><p class="eyebrow">Sent</p><h1 class="h1">Your SkyNudge is live.</h1><p class="sub">People within '+n.radius+' km can see it for about '+EXPIRY+' minutes.</p></div>'+
+ '<div class="row" style="border:1px solid var(--line);border-radius:14px;padding:12px 16px"><span class="tile">'+ci(n.cat,24)+'</span><span class="grow"><span class="t">'+esc(CATS[n.cat])+'</span><span class="s">'+esc(lookText(n.dir))+(n.landmark?' · '+esc(n.landmark):'')+'</span></span>'+pillFor(n.intensity)+'</div>'+
+ '<p class="serif" style="font-style:italic;font-size:20px">Now put your phone down and look up.</p>'+
+ '<div class="stack" style="--s:10px"><button class="btn btn-primary" data-go="home">Back to Home</button>'+
+ (S.saved?'<button class="btn btn-done" disabled style="opacity:1">'+ui("check",20,2.4)+' Saved privately</button>':'<button class="btn btn-line" data-action="save-moment">Save to My Sky Moments</button>')+'</div></div>';
+};
+
+function entryHtml(m){
+ var ph=photosOf(m),more=ph.slice(1).map(function(u){return '<i style="background-image:'+u+'"></i>';}).join("");
+ return '<article class="entry"><div class="ph" style="background-image:'+ph[0]+'" role="img" aria-label="Demo photo of '+esc(CATS[m.cat].toLowerCase())+'"><small>DEMO PHOTO</small></div>'+
+ (more?'<div class="strip">'+more+'</div>':'')+
+ '<div class="meta">'+ci(m.cat,20)+'<span>'+esc(CATS[m.cat])+'</span><span class="small" style="margin-left:auto;font-weight:500">'+fmtDate(m.date)+', '+esc(m.time)+'</span></div>'+
+ '<p style="margin-top:8px;display:flex;align-items:center;gap:6px;font-weight:500">'+ui("pin",16,1.8)+esc(m.place)+'</p>'+
+ '<p class="small" style="margin-top:2px">'+esc(lookText(m.dir))+(m.landmark?' · '+esc(m.landmark):'')+'</p>'+
+ (m.note?'<p style="margin-top:10px">'+esc(m.note)+'</p>':'')+'</article>';
+}
+function momentsHead(){
+ return '<div class="pad" style="padding-bottom:0"><div class="stack" style="--s:8px;padding-top:10px"><h1 class="h2">My Sky Moments</h1><p class="small" style="display:flex;align-items:center;gap:6px">'+ui("lock",15,1.8)+'Private. Only you can see these.</p></div></div>'+
+ '<div class="tabs" role="tablist" style="margin:18px 20px 0"><button role="tab" data-action="tab" data-v="feed" aria-selected="'+(S.momentsTab==="feed")+'">Feed</button><button role="tab" data-action="tab" data-v="cal" aria-selected="'+(S.momentsTab==="cal")+'">Calendar</button></div>';
+}
+V.momentsFeed=function(){
+ var list=S.moments.slice().sort(function(a,b){return (b.date+b.id).localeCompare(a.date+a.id);}).map(entryHtml).join("");
+ return momentsHead()+'<div class="pad" style="padding-top:0">'+list+'</div>';
+};
+V.momentsCal=function(){
+ var y=S.cal.y,m=S.cal.m,first=new Date(y,m,1),off=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate(),by={},count=0,pcount=0;
+ S.moments.forEach(function(x){by[x.date]=(by[x.date]||0)+1;});
+ var cells="";for(var i=0;i<off;i++)cells+="<span></span>";
+ for(var d=1;d<=days;d++){
+  var iso=y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0"),has=by[iso],t=iso===TODAY?" today":"";
+  if(has){var ph=photosOnDay(iso);count+=has;pcount+=ph.length;var shown=ph.slice(0,4);
+   cells+='<button class="dayc has'+t+'" data-action="day" data-iso="'+iso+'" aria-label="'+fmtDate(iso,true)+', '+ph.length+' photo'+(ph.length>1?"s":"")+'"><span class="thumbs t'+shown.length+'">'+shown.map(function(u){return '<i style="background-image:'+u+'"></i>';}).join("")+'</span><span class="dnum">'+d+'</span></button>';}
+  else cells+='<span class="dayc off'+t+'">'+d+'</span>';
+ }
+ var name=new Date(y,m,1).toLocaleDateString("en-AU",{month:"long",year:"numeric"});
+ return momentsHead()+'<div class="pad" style="padding-top:0"><div class="cal-head"><button class="iconbtn" data-action="cal-prev" aria-label="Previous month">'+ui("left",22,2)+'</button><h2 class="h3" style="font-size:19px">'+name+'</h2><button class="iconbtn" data-action="cal-next" aria-label="Next month">'+ui("chev",22,2)+'</button></div>'+
+ '<div class="cal">'+["M","T","W","T","F","S","S"].map(function(w){return '<span class="wd">'+w+'</span>';}).join("")+cells+'</div>'+
+ '<div class="legend"><i></i>'+(count?count+' moment'+(count>1?"s":"")+' · '+pcount+' photo'+(pcount>1?"s":"")+' this month. Tap a day to open it.':'No moments this month.')+'</div></div>';
+};
+V.day=function(){
+ var list=S.moments.filter(function(x){return x.date===S.selDay;}).map(entryHtml).join("");
+ return '<div class="topbar">'+backBtn("momentsCal")+'</div><div class="pad" style="padding-top:0"><div class="stack" style="--s:8px"><p class="eyebrow">Selected day</p><h1 class="h2">'+fmtDate(S.selDay,true)+'</h1></div>'+(list||'<p class="small" style="margin-top:20px">No moments saved on this day.</p>')+'</div>';
+};
+
+V.account=function(){
+ var v=S.user.ver,vs={none:"Not verified. Add the optional check.",pending:"We are reviewing your details.",verified:"Identity check completed.",rejected:"Not approved. You can try again."}[v];
+ return '<div class="pad stack" style="--s:24px;padding-top:20px"><h1 class="h2">Account</h1>'+
+ '<div style="display:flex;align-items:center;gap:16px"><span class="tile" style="width:64px;height:64px;border-radius:50%">'+ci("other",30)+'</span><div class="stack" style="--s:8px;min-width:0"><p class="h3" style="overflow-wrap:anywhere">'+nameHtml(S.user.name,verified())+'</p>'+statusPill(v)+'</div></div>'+
+ '<div class="rows">'+
+ rowBtn('data-action="goto-moments"',ui("moments",22),"My Sky Moments","Your private archive")+
+ rowBtn('data-action="open-verify"',ui("shield",22),"Verification",vs)+
+ rowBtn('data-go="settings"',ui("gear",22),"Settings","Location, alerts and demo controls")+
+ rowBtn('data-action="logout"',ui("out",22),"Log out","",'<span></span>')+
+ '</div><p class="small muted">Your real name and phone number never appear publicly.</p></div>';
+};
+
+V.settings=function(){
+ var s=S.settings;
+ return '<div class="topbar">'+backBtn("account")+'</div><div class="pad stack" style="--s:28px"><h1 class="h2">Settings</h1>'+
+ '<div class="stack" style="--s:18px"><p class="eyebrow" style="color:var(--ink-2)">Privacy</p>'+
+ '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px"><div><span class="t" id="ex-l" style="font-weight:600;display:block">Share exact location</span><span class="small">Off by default. You choose each time you nudge.</span></div>'+toggle("toggle-exact",s.exact,"ex-l")+'</div></div>'+
+ '<hr class="divider"><div class="stack" style="--s:18px"><p class="eyebrow" style="color:var(--ink-2)">Nearby</p>'+
+ '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px"><div><span class="t" id="al-l" style="font-weight:600;display:block">Nearby SkyNudge alerts</span><span class="small">A quiet nudge when something is happening close by.</span></div>'+toggle("toggle-alerts",s.alerts,"al-l")+'</div>'+
+ '<div><span class="label">Default radius</span>'+seg([{v:2,l:"2 km"},{v:5,l:"5 km"},{v:10,l:"10 km"}],s.radius,"set-radius")+'</div></div>'+
+ '<hr class="divider"><div class="demo-box stack" style="--s:12px"><p class="demo-tag">DEMO ONLY</p><p class="small">Preview how each verification state looks across the app.</p>'+
+ seg([{v:"none",l:"Not verified"},{v:"pending",l:"Pending"},{v:"verified",l:"Verified"},{v:"rejected",l:"Rejected"}],S.user.ver,"set-ver")+'</div>'+
+ '<button class="btn btn-line" data-action="logout">Log out</button></div>';
+};
+
+/* ---------- render ---------- */
+var $screen=document.getElementById("screen"),$nav=document.getElementById("nav"),$toast=document.getElementById("toast");
+var NAVSCREENS={home:"home",active:"home",momentsFeed:"moments",momentsCal:"moments",day:"moments",account:"account",settings:"account"};
+function renderNav(){
+ var cur=NAVSCREENS[S.screen];
+ if(!cur){$nav.hidden=true;return;}
+ $nav.hidden=false;
+ var items=[["home","Home","home"],["moments","My Sky Moments","moments"],["account","Account","account"]];
+ $nav.innerHTML=items.map(function(i){return '<button data-nav="'+i[0]+'"'+(cur===i[0]?' aria-current="page"':'')+'>'+ui(i[2],24,1.7)+'<span>'+i[1]+'</span></button>';}).join("");
+}
+function render(keep){
+ var top=keep?$screen.scrollTop:0;
+ $screen.innerHTML=V[S.screen]();
+ $screen.scrollTop=top;
+ renderNav();
+}
+function go(name){S.screen=name;render(false);}
+var toastT;
+function toast(msg){$toast.textContent=msg;$toast.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){$toast.hidden=true;},2600);}
+
+function readPhoto(file,cb){
+ var fr=new FileReader();
+ fr.onload=function(){var im=new Image();im.onload=function(){var max=900,k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);cb("url('"+c.toDataURL("image/jpeg",.85)+"')");};im.onerror=function(){toast("That file could not be read as a photo.");};im.src=fr.result;};
+ fr.readAsDataURL(file);
+}
+/* ---------- events ---------- */
+document.addEventListener("click",function(e){
+ var nav=e.target.closest("[data-nav]");
+ if(nav){var k=nav.getAttribute("data-nav");if(k==="home")go("home");else if(k==="moments")go(S.momentsTab==="cal"?"momentsCal":"momentsFeed");else go("account");return;}
+ var g=e.target.closest("[data-go]");
+ if(g&&!g.disabled){go(g.getAttribute("data-go"));return;}
+ var a=e.target.closest("[data-action]");
+ if(!a||a.disabled)return;
+ var act=a.getAttribute("data-action"),v=a.getAttribute("data-v"),id=a.getAttribute("data-id");
+ switch(act){
+  case"open":S.activeId=id;go("active");break;
+  case"seen":var n=nudgeById(id);if(n&&!n.seenByMe){n.seenByMe=true;n.seen++;render(true);toast("Thanks. Your nudge count was added.");}break;
+  case"start-nudge":S.draft={cat:null,intensity:"Beautiful",dir:"West",landmark:"",radius:S.settings.radius,exact:S.settings.exact,photo:"",photoData:null};S.saved=false;go("nudge1");break;
+  case"pick-cat":S.draft.cat=v;render(true);break;
+  case"pick-int":S.draft.intensity=v;render(true);break;
+  case"pick-dir":S.draft.dir=v;render(true);break;
+  case"pick-radius":S.draft.radius=Number(v);render(true);break;
+  case"toggle-exact-draft":S.draft.exact=!S.draft.exact;render(true);break;
+  case"pick-photo":document.getElementById("photo").click();break;
+  case"send-nudge":
+   var d=S.draft,nn={id:"n"+Date.now(),cat:d.cat,intensity:d.intensity,dir:d.dir,radius:d.radius,place:d.landmark.trim()||"Near you",landmark:d.landmark.trim(),age:0,seen:1,seenByMe:true,user:S.user.name,verified:verified(),x:36,y:58,km:0.0,note:"Posted from your area just now.",mine:true,exact:d.exact,photoData:d.photoData};
+   S.nudges.push(nn);S.lastNudge=nn;S.saved=false;go("success");break;
+  case"save-moment":
+   var l=S.lastNudge;S.moments.push({id:"m"+Date.now(),date:TODAY,time:"Just now",cat:l.cat,photos:1,photoData:l.photoData,place:l.landmark||"Near Melbourne CBD",dir:l.dir,landmark:l.landmark,note:""});S.saved=true;render(true);toast("Saved to My Sky Moments.");break;
+  case"tab":S.momentsTab=v;go(v==="cal"?"momentsCal":"momentsFeed");break;
+  case"cal-prev":S.cal.m--;if(S.cal.m<0){S.cal.m=11;S.cal.y--;}render(true);break;
+  case"cal-next":S.cal.m++;if(S.cal.m>11){S.cal.m=0;S.cal.y++;}render(true);break;
+  case"day":S.selDay=a.getAttribute("data-iso");go("day");break;
+  case"goto-moments":go(S.momentsTab==="cal"?"momentsCal":"momentsFeed");break;
+  case"open-verify":S.flow="account";go(S.user.ver==="pending"||S.user.ver==="verified"?"account":"verifyIntro");if(S.user.ver==="pending")toast("Your verification is pending.");if(S.user.ver==="verified")toast("You are already verified.");break;
+  case"create-general":S.user={name:genName(),ver:"none"};S.flow="";go("welcome");break;
+  case"create-verify":S.user={name:genName(),ver:"none"};S.flow="create";go("verifyIntro");break;
+  case"verify-skip":var f=S.flow;S.flow="";go(f==="create"?"welcome":"account");break;
+  case"toggle-exact":S.settings.exact=!S.settings.exact;render(true);break;
+  case"toggle-alerts":S.settings.alerts=!S.settings.alerts;render(true);break;
+  case"set-radius":S.settings.radius=Number(v);render(true);break;
+  case"set-ver":S.user.ver=v;render(true);break;
+  case"logout":S.flow="";go("login");break;
+ }
+});
+document.addEventListener("submit",function(e){
+ var f=e.target.getAttribute("data-form");if(!f)return;
+ e.preventDefault();
+ if(f==="login"){go("home");}
+ else if(f==="verify"){
+  S.user.ver="pending";var fl=S.flow;S.flow="";go(fl==="create"?"welcome":"account");toast("Verification submitted. Status: Pending.");
+ }
+});
+document.addEventListener("input",function(e){
+ var t=e.target;
+ if(t.getAttribute&&t.getAttribute("data-bind")==="landmark"){S.draft.landmark=t.value;}
+ if(t.closest&&t.closest("#vform")){
+  var ok=document.getElementById("v-name").value.trim().length>1&&document.getElementById("v-phone").value.replace(/\D/g,"").length>=8&&document.getElementById("v-consent").checked;
+  document.getElementById("v-submit").disabled=!ok;
+ }
+});
+document.addEventListener("change",function(e){
+ var t=e.target;
+ if(t.id==="photo"&&t.files&&t.files[0]){var file=t.files[0];S.draft.photo=file.name;readPhoto(file,function(u){S.draft.photoData=u;if(S.screen==="nudge2")render(true);});}
+ if(t.id==="v-consent"){document.getElementById("vform").dispatchEvent(new Event("input",{bubbles:true}));}
+});
+
+render(false);
+})();
+</script>

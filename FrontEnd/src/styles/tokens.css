@@ -1,0 +1,39 @@
+:root {
+  --color-background: #ffffff;
+  --color-text-primary: #111111;
+  --color-text-secondary: #5b6572;
+  --color-text-muted: #8791a0;
+  --color-border: #e6eaf0;
+  --color-primary: #0064e0;
+  --color-primary-hover: #0053bd;
+  --color-secondary-blue: #1877f2;
+  --color-pale-blue: #e7f4ff;
+  --color-very-light-blue: #f5faff;
+  --color-danger: #b3261e;
+  --color-danger-background: #fdecea;
+  --color-white: #ffffff;
+  --gradient-primary: linear-gradient(135deg, var(--color-primary), #3b8ef0);
+
+  --font-sans: 'DM Sans', sans-serif;
+  --font-serif: 'Playfair Display', serif;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  --radius-small: 8px;
+  --radius-medium: 12px;
+  --radius-large: 16px;
+  --radius-pill: 999px;
+  --control-height: 48px;
+  --tap-target: 44px;
+  --phone-width: 430px;
+  --phone-height: 900px;
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-primary) 26%, transparent);
+}

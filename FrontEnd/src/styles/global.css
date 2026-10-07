@@ -1,0 +1,25 @@
+@import '@fontsource/dm-sans/400.css';
+@import '@fontsource/dm-sans/500.css';
+@import '@fontsource/dm-sans/600.css';
+@import '@fontsource/dm-sans/700.css';
+@import '@fontsource/playfair-display/500.css';
+@import '@fontsource/playfair-display/600.css';
+@import '@fontsource/playfair-display/500-italic.css';
+@import './tokens.css';
+
+* { box-sizing: border-box; }
+html { background: var(--color-very-light-blue); }
+body { margin: 0; min-width: 320px; color: var(--color-text-primary); font-family: var(--font-sans); font-size: 16px; }
+button, input, textarea, select { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+button:disabled { cursor: not-allowed; }
+a { color: inherit; }
+
+.screen-page { padding: var(--space-6) var(--space-5); }
+.screen-page--centered { min-height: 100%; display: grid; align-content: center; }
+.page-eyebrow { margin: 0 0 var(--space-2); color: var(--color-primary); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.page-title { margin: 0; font-family: var(--font-serif); font-size: clamp(32px, 8vw, 40px); font-weight: 500; letter-spacing: -.03em; line-height: 1.08; }
+.page-copy { margin: var(--space-3) 0 0; color: var(--color-text-secondary); line-height: 1.55; }
+.page-stack { display: grid; gap: var(--space-6); }
+.placeholder-note { margin-top: var(--space-6); padding: var(--space-4); color: var(--color-text-secondary); background: var(--color-very-light-blue); border: 1px solid var(--color-border); border-radius: var(--radius-medium); line-height: 1.5; }

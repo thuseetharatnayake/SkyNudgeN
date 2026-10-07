@@ -1,0 +1,3 @@
+interface SegmentOption<T extends string | number> { value: T; label: string; }
+interface SegmentedProps<T extends string | number> { options: readonly SegmentOption<T>[]; value: T; onChange: (value: T) => void; label: string; }
+export function Segmented<T extends string | number>({ options, value, onChange, label }: SegmentedProps<T>): JSX.Element { return <div className="segmented" role="tablist" aria-label={label}>{options.map((option) => <button type="button" role="tab" aria-selected={option.value === value} key={String(option.value)} onClick={() => onChange(option.value)}>{option.label}</button>)}</div>; }

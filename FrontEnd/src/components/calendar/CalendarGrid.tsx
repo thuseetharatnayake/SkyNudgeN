@@ -1,0 +1,4 @@
+import type { SkyMoment } from '../../types/sky';
+
+interface CalendarGridProps { moments: SkyMoment[]; onSelectDay?: (isoDate: string) => void; }
+export function CalendarGrid({ moments, onSelectDay }: CalendarGridProps): JSX.Element { const byDay = new Map<string, SkyMoment[]>(); moments.forEach((moment) => { const day = moment.occurred_at.slice(0, 10); byDay.set(day, [...(byDay.get(day) ?? []), moment]); }); return <section className="calendar-grid" aria-label="Sky moments calendar"><p>{byDay.size} days with saved moments.</p>{[...byDay.entries()].map(([date, dayMoments]) => <button type="button" key={date} onClick={() => onSelectDay?.(date)}>{date} · {dayMoments.length} moment{dayMoments.length === 1 ? '' : 's'}</button>)}</section>; }

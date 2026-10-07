@@ -1,0 +1,5 @@
+import type { SkyMoment } from '../../types/sky';
+import { SkyIcon } from '../ui/SkyIcon';
+
+interface MomentEntryProps { moment: SkyMoment; }
+export function MomentEntry({ moment }: MomentEntryProps): JSX.Element { return <article className="moment-entry"><div className="moment-entry__photo">{moment.photo_urls[0] ? <img src={moment.photo_urls[0]} alt={`${moment.category} at ${moment.location_label}`} /> : <SkyIcon name={moment.category} size={38} />}</div><div className="moment-entry__content"><strong>{moment.category}</strong><p>{new Date(moment.occurred_at).toLocaleDateString('en-AU', { dateStyle: 'medium' })} · Look {moment.direction}</p><p><SkyIcon name="location" size={15} /> {moment.location_label}{moment.landmark ? ` · ${moment.landmark}` : ''}</p>{moment.notes ? <em>{moment.notes}</em> : null}</div></article>; }
