@@ -40,8 +40,27 @@ type NudgeRpcRow = {
   longitude: number | string;
 };
 
+type MomentPhotoRow = { storage_path: string; position: number };
+type MomentRow = {
+  id: string;
+  category: Category;
+  captured_at: string;
+  location_label: string | null;
+  direction: Direction | null;
+  landmark: string | null;
+  note: string | null;
+  sky_moment_photos: MomentPhotoRow[] | null;
+};
+
+const allowedImageTypes = new Set(['image/jpeg', 'image/png']);
+const maxPhotoBytes = 5 * 1024 * 1024;
+
 type UntypedRpcClient = {
   rpc: <T>(functionName: string, arguments_: Record<string, unknown>) => Promise<{ data: T | null; error: PostgrestError | null }>;
+};
+
+type MomentPhotoInsertClient = {
+  insert: (values: { moment_id: string; user_id: string; storage_path: string; position: number }[]) => Promise<{ error: PostgrestError | null }>;
 };
 
 const notImplemented = (operation: string): never => {
@@ -85,6 +104,15 @@ function toNudge(row: NudgeRpcRow): Nudge {
     photo_url: photoUrl,
     note: row.note ?? '',
   };
+}
+
+function validatePhoto(file: File): void {
+  if (!allowedImageTypes.has(file.type)) throw new Error('Please choose a JPEG or PNG image.');
+  if (file.size > maxPhotoBytes) throw new Error('Photos must be 5 MB or smaller.');
+}
+
+function extensionFor(file: File): 'jpg' | 'png' {
+  return file.type === 'image/png' ? 'png' : 'jpg';
 }
 
 function rpc<T>(functionName: string, arguments_: Record<string, unknown>): Promise<{ data: T | null; error: PostgrestError | null }> {
@@ -144,26 +172,42 @@ export class SupabaseSkyNudgeApi implements SkyNudgeApi {
   }
 
   async createNudge(input: CreateNudgeInput): Promise<Nudge> {
-    if (input.photo_data_url) {
-      throw new Error('Photo uploads will be connected in the next storage phase. Create the nudge without a photo for now.');
+    const supabase = getSupabaseClient();
+    let photoPath: string | null = null;
+    if (input.photo_file) {
+      validatePhoto(input.photo_file);
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!userData.user) throw new Error('You must be signed in to upload a photo.');
+      photoPath = `${userData.user.id}/${crypto.randomUUID()}.${extensionFor(input.photo_file)}`;
+      const { error: uploadError } = await supabase.storage.from('nudge-photos').upload(photoPath, input.photo_file, {
+        contentType: input.photo_file.type,
+        upsert: false,
+      });
+      if (uploadError) throw uploadError;
     }
-    const { data, error } = await rpc<string>('create_nudge', {
-      p_category: input.category,
-      p_intensity: input.intensity,
-      p_direction: input.direction,
-      p_radius_km: input.radius_km,
-      p_landmark: input.landmark,
-      p_note: null,
-      p_photo_path: null,
-      p_lat: input.coordinates.lat,
-      p_lng: input.coordinates.lng,
-      p_share_exact: input.exact_location_shared,
-      p_area_label: input.landmark,
-    });
-    if (error) throw error;
-    const nudge = await this.getNudge(data as string);
-    if (!nudge) throw new Error('Your SkyNudge was created but could not be retrieved.');
-    return nudge;
+    try {
+      const { data, error } = await rpc<string>('create_nudge', {
+        p_category: input.category,
+        p_intensity: input.intensity,
+        p_direction: input.direction,
+        p_radius_km: input.radius_km,
+        p_landmark: input.landmark,
+        p_note: null,
+        p_photo_path: photoPath,
+        p_lat: input.coordinates.lat,
+        p_lng: input.coordinates.lng,
+        p_share_exact: input.exact_location_shared,
+        p_area_label: input.landmark,
+      });
+      if (error) throw error;
+      const nudge = await this.getNudge(data as string);
+      if (!nudge) throw new Error('Your SkyNudge was created but could not be retrieved.');
+      return nudge;
+    } catch (caughtError) {
+      if (photoPath) await supabase.storage.from('nudge-photos').remove([photoPath]);
+      throw caughtError;
+    }
   }
 
   async confirmSighting(id: string): Promise<Nudge> {
@@ -175,11 +219,72 @@ export class SupabaseSkyNudgeApi implements SkyNudgeApi {
   }
 
   async listMyMoments(): Promise<SkyMoment[]> {
-    return notImplemented('Sky Moments');
+    const supabase = getSupabaseClient();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    if (!userData.user) throw new Error('You must be signed in to view Sky Moments.');
+    const { data, error } = await supabase
+      .from('sky_moments')
+      .select('id, category, captured_at, location_label, direction, landmark, note, sky_moment_photos(storage_path, position)')
+      .eq('user_id', userData.user.id)
+      .order('captured_at', { ascending: false });
+    if (error) throw error;
+    return Promise.all(((data ?? []) as MomentRow[]).map((row) => this.toSkyMoment(row)));
   }
 
-  async saveMoment(_input: SaveMomentInput): Promise<SkyMoment> {
-    return notImplemented('Saving a Sky Moment');
+  async saveMoment(input: SaveMomentInput): Promise<SkyMoment> {
+    const { data, error } = await rpc<string>('save_nudge_as_moment', { p_nudge_id: input.nudge_id });
+    if (error) throw error;
+    const moment = await this.getMoment(data as string);
+    if (!moment) throw new Error('Your Sky Moment was saved but could not be retrieved.');
+    return moment;
+  }
+
+  async addMomentPhotos(momentId: string, photos: File[]): Promise<SkyMoment> {
+    if (photos.length === 0) {
+      const moment = await this.getMoment(momentId);
+      if (!moment) throw new Error('Sky Moment not found.');
+      return moment;
+    }
+    if (photos.length > 6) throw new Error('A Sky Moment can contain at most six photos.');
+    photos.forEach(validatePhoto);
+
+    const supabase = getSupabaseClient();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    if (!userData.user) throw new Error('You must be signed in to upload photos.');
+    const { data: existingPhotos, error: existingError } = await supabase
+      .from('sky_moment_photos')
+      .select('position')
+      .eq('moment_id', momentId)
+      .order('position');
+    if (existingError) throw existingError;
+    const startingPosition = (existingPhotos ?? []).length;
+    if (startingPosition + photos.length > 6) throw new Error('A Sky Moment can contain at most six photos.');
+
+    const uploadedPaths: string[] = [];
+    try {
+      for (const photo of photos) {
+        const path = `${userData.user.id}/${crypto.randomUUID()}.${extensionFor(photo)}`;
+        const { error: uploadError } = await supabase.storage.from('moment-photos').upload(path, photo, { contentType: photo.type, upsert: false });
+        if (uploadError) throw uploadError;
+        uploadedPaths.push(path);
+      }
+      const momentPhotos = supabase.from('sky_moment_photos') as unknown as MomentPhotoInsertClient;
+      const { error: insertError } = await momentPhotos.insert(uploadedPaths.map((path, index) => ({
+        moment_id: momentId,
+        user_id: userData.user.id,
+        storage_path: path,
+        position: startingPosition + index + 1,
+      })));
+      if (insertError) throw insertError;
+    } catch (caughtError) {
+      if (uploadedPaths.length > 0) await supabase.storage.from('moment-photos').remove(uploadedPaths);
+      throw caughtError;
+    }
+    const moment = await this.getMoment(momentId);
+    if (!moment) throw new Error('Photos were uploaded but the Sky Moment could not be retrieved.');
+    return moment;
   }
 
   subscribeToNudges(callback: (nudges: Nudge[]) => void): () => void {
@@ -201,5 +306,44 @@ export class SupabaseSkyNudgeApi implements SkyNudgeApi {
 
     if (error) throw error;
     return toSkyUser(user, data as ProfileRow);
+  }
+
+  private async getMoment(id: string): Promise<SkyMoment | null> {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('sky_moments')
+      .select('id, category, captured_at, location_label, direction, landmark, note, sky_moment_photos(storage_path, position)')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw error;
+    return data ? this.toSkyMoment(data as MomentRow) : null;
+  }
+
+  private async toSkyMoment(row: MomentRow): Promise<SkyMoment> {
+    const photos = [...(row.sky_moment_photos ?? [])].sort((left, right) => left.position - right.position);
+    if (photos.length === 0) {
+      return {
+        id: row.id,
+        category: row.category,
+        occurred_at: row.captured_at,
+        location_label: row.location_label ?? 'Saved sky moment',
+        direction: row.direction ?? 'above',
+        landmark: row.landmark,
+        notes: row.note ?? '',
+        photo_urls: [],
+      };
+    }
+    const { data, error } = await getSupabaseClient().storage.from('moment-photos').createSignedUrls(photos.map((photo) => photo.storage_path), 3600);
+    if (error) throw error;
+    return {
+      id: row.id,
+      category: row.category,
+      occurred_at: row.captured_at,
+      location_label: row.location_label ?? 'Saved sky moment',
+      direction: row.direction ?? 'above',
+      landmark: row.landmark,
+      notes: row.note ?? '',
+      photo_urls: (data ?? []).flatMap((photo) => photo.signedUrl ? [photo.signedUrl] : []),
+    };
   }
 }

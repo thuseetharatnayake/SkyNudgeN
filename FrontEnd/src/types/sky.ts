@@ -43,7 +43,7 @@ export interface CreateNudgeInput {
   radius_km: RadiusKm;
   coordinates: Coordinates;
   exact_location_shared: boolean;
-  photo_data_url: string | null;
+  photo_file: File | null;
 }
 
 export interface SkyMoment {

@@ -535,6 +535,9 @@ ON CONFLICT (id) DO UPDATE SET public = EXCLUDED.public, file_size_limit = EXCLU
 DROP POLICY IF EXISTS nudge_photo_upload_own_folder ON storage.objects;
 CREATE POLICY nudge_photo_upload_own_folder ON storage.objects FOR INSERT TO authenticated
   WITH CHECK (bucket_id = 'nudge-photos' AND (storage.foldername(name))[1] = auth.uid()::text);
+DROP POLICY IF EXISTS nudge_photo_delete_own_folder ON storage.objects;
+CREATE POLICY nudge_photo_delete_own_folder ON storage.objects FOR DELETE TO authenticated
+  USING (bucket_id = 'nudge-photos' AND (storage.foldername(name))[1] = auth.uid()::text);
 DROP POLICY IF EXISTS moment_photo_owner_select ON storage.objects;
 CREATE POLICY moment_photo_owner_select ON storage.objects FOR SELECT TO authenticated
   USING (bucket_id = 'moment-photos' AND (storage.foldername(name))[1] = auth.uid()::text);

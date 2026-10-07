@@ -87,7 +87,7 @@ export class MockSkyNudgeApi implements SkyNudgeApi {
 
   async createNudge(input: CreateNudgeInput): Promise<Nudge> {
     if (!this.profile) throw new Error('You must be signed in to create a SkyNudge.');
-    const nudge: Nudge = { id: `nudge-${Date.now()}`, category: input.category, intensity: input.intensity, direction: input.direction, radius_km: input.radius_km as RadiusKm, landmark: input.landmark, coordinates: { ...input.coordinates }, created_at: new Date().toISOString(), poster: { id: this.profile.id, username: this.profile.username, verification_status: this.profile.verification_status }, watcher_count: 1, confirmed_by_me: true, photo_url: input.photo_data_url, note: 'Posted from your area just now.' };
+    const nudge: Nudge = { id: `nudge-${Date.now()}`, category: input.category, intensity: input.intensity, direction: input.direction, radius_km: input.radius_km as RadiusKm, landmark: input.landmark, coordinates: { ...input.coordinates }, created_at: new Date().toISOString(), poster: { id: this.profile.id, username: this.profile.username, verification_status: this.profile.verification_status }, watcher_count: 1, confirmed_by_me: true, photo_url: null, note: 'Posted from your area just now.' };
     this.nudges = [nudge, ...this.nudges];
     this.notify();
     return copyNudge(nudge);
@@ -107,6 +107,13 @@ export class MockSkyNudgeApi implements SkyNudgeApi {
     if (!nudge) throw new Error('SkyNudge not found.');
     const moment: SkyMoment = { id: `moment-${Date.now()}`, category: nudge.category, occurred_at: new Date().toISOString(), location_label: nudge.landmark ?? 'Near Melbourne CBD', direction: nudge.direction, landmark: nudge.landmark, notes: input.notes ?? '', photo_urls: nudge.photo_url ? [nudge.photo_url] : [] };
     this.moments = [moment, ...this.moments];
+    return copyMoment(moment);
+  }
+
+  async addMomentPhotos(momentId: string, photos: File[]): Promise<SkyMoment> {
+    const moment = this.moments.find((candidate) => candidate.id === momentId);
+    if (!moment) throw new Error('Sky Moment not found.');
+    if (moment.photo_urls.length + photos.length > 6) throw new Error('A Sky Moment can contain at most six photos.');
     return copyMoment(moment);
   }
 

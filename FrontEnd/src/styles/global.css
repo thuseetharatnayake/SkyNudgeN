@@ -39,3 +39,11 @@ a { color: inherit; }
 .nudge-checkbox input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--color-primary); }
 .nudge-detail { display: grid; gap: var(--space-2); padding: var(--space-4); background: var(--color-very-light-blue); border: 1px solid var(--color-border); border-radius: var(--radius-medium); }
 .nudge-detail strong { text-transform: capitalize; }.nudge-detail span, .nudge-detail p { margin: 0; color: var(--color-text-secondary); }.nudge-photo { width: 100%; max-height: 320px; object-fit: cover; border-radius: var(--radius-medium); }
+.sky-field__input--file { padding: var(--space-3); }
+.file-summary { margin: calc(var(--space-3) * -1) 0 0; color: var(--color-text-secondary); font-size: 13px; }
+.moments-list { display: grid; }
+.moment-archive-item { border-bottom: 1px solid var(--color-border); }
+.moment-archive-item .moment-entry { border-bottom: 0; }
+.moment-archive-item__actions { padding: 0 0 var(--space-4); }
+.moment-upload-button { display: inline-grid; place-items: center; min-height: 40px; padding: 0 var(--space-4); border-radius: var(--radius-small); font-size: 14px; cursor: pointer; }
+.moment-upload-button input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }

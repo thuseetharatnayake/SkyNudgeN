@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useSkyNudgeApi } from '../app/providers/useSkyNudgeApi';
 import { useAuth } from '../app/providers/useAuth';
+import { MomentEntry } from '../components/moments/MomentEntry';
 import { NudgeRow } from '../components/nudge/NudgeRow';
 import { RoutePlaceholder } from './RoutePlaceholder';
-import type { Category, Direction, Intensity, Nudge, RadiusKm } from '../types/sky';
+import type { Category, Direction, Intensity, Nudge, RadiusKm, SkyMoment } from '../types/sky';
 
 const melbourneFallback = { lat: -37.8136, lng: 144.9631 };
 const categories: Category[] = ['sunset', 'sunrise', 'rainbow', 'clouds', 'moon', 'other'];
@@ -137,6 +138,8 @@ export function ActiveMomentPage(): JSX.Element {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedMessage, setSavedMessage] = useState('');
 
   const loadNudge = useCallback(async (): Promise<void> => {
     if (!nudgeId) return;
@@ -157,6 +160,21 @@ export function ActiveMomentPage(): JSX.Element {
     finally { setIsConfirming(false); }
   }
 
+  async function saveAsMoment(): Promise<void> {
+    if (!nudge) return;
+    setIsSaving(true);
+    setError('');
+    setSavedMessage('');
+    try {
+      await api.saveMoment({ nudge_id: nudge.id });
+      setSavedMessage('Saved to your private Sky Moments archive.');
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   if (isLoading) return <div className="screen-page"><p className="page-copy">Loading SkyNudge…</p></div>;
   if (error) return <div className="screen-page"><p className="auth-error" role="alert">{error}</p></div>;
   if (!nudge) return <div className="screen-page"><p className="placeholder-note">This SkyNudge is no longer active or is unavailable.</p></div>;
@@ -164,6 +182,8 @@ export function ActiveMomentPage(): JSX.Element {
     {nudge.photo_url ? <img className="nudge-photo" src={nudge.photo_url} alt="Shared sky moment" /> : null}
     <div className="nudge-detail"><strong>{nudge.intensity.replace('_', ' ')}</strong><span>{nudge.watcher_count} people can see it</span>{nudge.note ? <p>{nudge.note}</p> : null}</div>
     {nudge.confirmed_by_me ? <p className="auth-message">You confirmed this SkyNudge.</p> : <button className="sky-button sky-button--primary sky-button--full" type="button" disabled={isConfirming} onClick={() => void confirm()}>{isConfirming ? 'Confirming…' : 'I can see it too'}</button>}
+    {savedMessage ? <p className="auth-message">{savedMessage}</p> : null}
+    <button className="sky-button sky-button--secondary sky-button--full" type="button" disabled={isSaving} onClick={() => void saveAsMoment()}>{isSaving ? 'Saving…' : 'Save as Sky Moment'}</button>
   </div></div>;
 }
 
@@ -176,6 +196,7 @@ export function NudgeStepOnePage(): JSX.Element {
   const [radiusKm, setRadiusKm] = useState<RadiusKm>(5);
   const [landmark, setLandmark] = useState('');
   const [shareExactLocation, setShareExactLocation] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -185,7 +206,7 @@ export function NudgeStepOnePage(): JSX.Element {
     setIsSubmitting(true);
     try {
       const position = await getCurrentLocation();
-      const nudge = await api.createNudge({ category, intensity, direction, radius_km: radiusKm, landmark: landmark.trim() || null, coordinates: position, exact_location_shared: shareExactLocation, photo_data_url: null });
+      const nudge = await api.createNudge({ category, intensity, direction, radius_km: radiusKm, landmark: landmark.trim() || null, coordinates: position, exact_location_shared: shareExactLocation, photo_file: photoFile });
       navigate(`/nudge/${nudge.id}`, { replace: true });
     } catch (caughtError) {
       setError(getErrorMessage(caughtError));
@@ -201,6 +222,8 @@ export function NudgeStepOnePage(): JSX.Element {
       <label className="sky-field"><span className="sky-field__label">Direction to look</span><select className="sky-field__input" value={direction} onChange={(event) => setDirection(event.target.value as Direction)}>{directions.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
       <label className="sky-field"><span className="sky-field__label">Share with people within</span><select className="sky-field__input" value={radiusKm} onChange={(event) => setRadiusKm(Number(event.target.value) as RadiusKm)}>{radii.map((value) => <option key={value} value={value}>{value} km</option>)}</select></label>
       <label className="sky-field"><span className="sky-field__label">Nearby landmark <span className="sky-field__hint">optional</span></span><input className="sky-field__input" value={landmark} onChange={(event) => setLandmark(event.target.value)} maxLength={100} placeholder="e.g. St Kilda Beach" /></label>
+      <label className="sky-field"><span className="sky-field__label">Photo <span className="sky-field__hint">optional · JPEG/PNG, up to 5 MB</span></span><input className="sky-field__input sky-field__input--file" type="file" accept="image/jpeg,image/png" onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)} /></label>
+      {photoFile ? <p className="file-summary">Selected: {photoFile.name}</p> : null}
       <label className="nudge-checkbox"><input type="checkbox" checked={shareExactLocation} onChange={(event) => setShareExactLocation(event.target.checked)} /> Share my exact location for this nudge</label>
       {error ? <p className="auth-error" role="alert">{error}</p> : null}
       <button className="sky-button sky-button--primary sky-button--full" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Sharing…' : 'Share SkyNudge'}</button>
@@ -209,7 +232,49 @@ export function NudgeStepOnePage(): JSX.Element {
 }
 export const NudgeStepTwoPage = (): JSX.Element => <RoutePlaceholder eyebrow="New SkyNudge · 2 of 2" title="Help people find it." description="Share an approximate direction and location." />;
 export const NudgeSuccessPage = (): JSX.Element => <RoutePlaceholder eyebrow="Sent" title="Your SkyNudge is live." description="Now put your phone down and look up." />;
-export const MomentsFeedPage = (): JSX.Element => <RoutePlaceholder eyebrow="Private archive" title="My Sky Moments" description="Private. Only you can see these." />;
+export function MomentsFeedPage(): JSX.Element {
+  const api = useSkyNudgeApi();
+  const [moments, setMoments] = useState<SkyMoment[]>([]);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [uploadingMomentId, setUploadingMomentId] = useState<string | null>(null);
+
+  const loadMoments = useCallback(async (): Promise<void> => {
+    setError('');
+    try {
+      setMoments(await api.listMyMoments());
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [api]);
+
+  useEffect(() => { void loadMoments(); }, [loadMoments]);
+
+  async function addPhotos(moment: SkyMoment, files: FileList | null): Promise<void> {
+    if (!files || files.length === 0) return;
+    setUploadingMomentId(moment.id);
+    setError('');
+    try {
+      const updatedMoment = await api.addMomentPhotos(moment.id, Array.from(files));
+      setMoments((current) => current.map((candidate) => candidate.id === updatedMoment.id ? updatedMoment : candidate));
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError));
+    } finally {
+      setUploadingMomentId(null);
+    }
+  }
+
+  return <div className="screen-page"><div className="page-stack"><div><p className="page-eyebrow">Private archive</p><h1 className="page-title">My Sky Moments</h1><p className="page-copy">Only you can view saved moments and their photos.</p></div>
+    {error ? <p className="auth-error" role="alert">{error}</p> : null}
+    {isLoading ? <p className="page-copy">Loading your private archive…</p> : null}
+    {!isLoading && !error && moments.length === 0 ? <div className="placeholder-note">Save an active SkyNudge to begin your private archive.</div> : null}
+    <section className="moments-list" aria-label="My Sky Moments">{moments.map((moment) => <article key={moment.id} className="moment-archive-item"><MomentEntry moment={moment} />
+      <div className="moment-archive-item__actions"><label className="sky-button sky-button--secondary moment-upload-button">{uploadingMomentId === moment.id ? 'Uploading…' : `Add photos (${moment.photo_urls.length}/6)`}<input type="file" accept="image/jpeg,image/png" multiple disabled={uploadingMomentId !== null || moment.photo_urls.length >= 6} onChange={(event) => { void addPhotos(moment, event.target.files); event.currentTarget.value = ''; }} /></label></div>
+    </article>)}</section>
+  </div></div>;
+}
 export const MomentsCalendarPage = (): JSX.Element => <RoutePlaceholder eyebrow="Private archive" title="My Sky Moments" description="Browse your private moments by day." />;
 export const SelectedDayPage = (): JSX.Element => <RoutePlaceholder eyebrow="Private archive" title="A day in the sky." description="Your saved moments from this selected day." />;
 export function AccountPage(): JSX.Element {
