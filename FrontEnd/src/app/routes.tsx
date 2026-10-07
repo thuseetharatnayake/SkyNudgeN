@@ -20,7 +20,7 @@ import {
   WelcomePage,
 } from '../pages/PlaceholderPages';
 
-const mainRoutes = ['/home', '/moments', '/moments/calendar', '/moments/day', '/account', '/settings'];
+const mainRoutes = ['/', '/home', '/moments', '/moments/calendar', '/moments/day', '/account', '/settings'];
 
 interface RouteGuardProps { children: ReactNode; }
 function RouteLoading(): JSX.Element { return <div className="screen-page screen-page--centered"><p className="page-copy">Restoring your session…</p></div>; }
@@ -44,6 +44,7 @@ export function AppRoutes(): JSX.Element {
     <Route path="/verification" element={<RequireAuth><VerificationIntroPage /></RequireAuth>} />
     <Route path="/verification/form" element={<RequireAuth><VerificationFormPage /></RequireAuth>} />
     <Route path="/welcome" element={<RequireAuth><WelcomePage /></RequireAuth>} />
+    <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
     <Route path="/home" element={<RequireAuth><HomePage /></RequireAuth>} />
     <Route path="/nudge/:nudgeId" element={<RequireAuth><ActiveMomentPage /></RequireAuth>} />
     <Route path="/nudge/new" element={<RequireAuth><NudgeStepOnePage /></RequireAuth>} />

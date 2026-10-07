@@ -13,6 +13,10 @@
   --color-danger-background: #fdecea;
   --color-white: #ffffff;
   --gradient-primary: linear-gradient(135deg, var(--color-primary), #3b8ef0);
+  --color-primary-halo: rgb(0 100 224 / 16%);
+  --color-dark-overlay: rgb(17 17 17 / 62%);
+  --shadow-primary: 0 8px 22px rgb(0 100 224 / 22%);
+  --shadow-map-pin: 0 2px 6px rgb(20 50 100 / 12%);
 
   --font-sans: 'DM Sans', sans-serif;
   --font-serif: 'Playfair Display', serif;

@@ -7,7 +7,8 @@ import { MomentsHeader } from '../components/moments/MomentsHeader';
 import { CalendarGrid } from '../components/calendar/CalendarGrid';
 import { SkyIcon } from '../components/ui/SkyIcon';
 import { localDateKey } from '../lib/moments';
-import { NudgeRow } from '../components/nudge/NudgeRow';
+import { HomeScreen } from '../components/home/HomeScreen';
+import { useNearbyNudges } from '../hooks/useNearbyNudges';
 import { Segmented } from '../components/ui/Segmented';
 import { Toggle } from '../components/ui/Toggle';
 import { RoutePlaceholder } from './RoutePlaceholder';
@@ -167,34 +168,9 @@ export function VerificationFormPage(): JSX.Element {
 }
 export const WelcomePage = (): JSX.Element => <RoutePlaceholder eyebrow="Welcome" title="The sky is waiting." description="Your anonymous account is ready." />;
 export function HomePage(): JSX.Element {
-  const api = useSkyNudgeApi();
   const navigate = useNavigate();
-  const [nudges, setNudges] = useState<Nudge[]>([]);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-
-  const loadNudges = useCallback(async (): Promise<void> => {
-    setError('');
-    try {
-      const position = await getCurrentLocation();
-      setNudges(await api.getNearbyNudges(position.lat, position.lng));
-    } catch (caughtError) {
-      setError(getErrorMessage(caughtError));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [api]);
-
-  useEffect(() => { void loadNudges(); }, [loadNudges]);
-  useEffect(() => api.subscribeToNudges(() => { void loadNudges(); }), [api, loadNudges]);
-
-  return <div className="screen-page"><div className="page-stack"><div><p className="page-eyebrow">Right now near you</p><h1 className="page-title">SkyNudges</h1><p className="page-copy">Temporary moments shared by people nearby.</p></div>
-    <button className="sky-button sky-button--primary sky-button--full" type="button" onClick={() => navigate('/nudge/new')}>Share a SkyNudge</button>
-    {error ? <p className="auth-error" role="alert">{error}</p> : null}
-    {isLoading ? <p className="page-copy">Finding nearby moments…</p> : null}
-    {!isLoading && !error && nudges.length === 0 ? <div className="placeholder-note">No active SkyNudges are nearby right now. Be the first to share what you see.</div> : null}
-    <section aria-label="Nearby SkyNudges">{nudges.map((nudge) => <NudgeRow key={nudge.id} nudge={nudge} onClick={() => navigate(`/nudge/${nudge.id}`)} />)}</section>
-  </div></div>;
+  const nearby = useNearbyNudges();
+  return <HomeScreen {...nearby} onAccount={() => navigate('/account')} onCreate={() => navigate('/nudge/new')} onOpenNudge={(id) => navigate(`/nudge/${id}`)} onEnableLocation={() => void nearby.requestLocation()} onRetry={() => void nearby.retry()} />;
 }
 
 export function ActiveMomentPage(): JSX.Element {

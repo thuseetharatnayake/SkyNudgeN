@@ -198,7 +198,8 @@ export class SupabaseSkyNudgeApi implements SkyNudgeApi {
   async getNearbyNudges(lat: number, lng: number): Promise<Nudge[]> {
     const { data, error } = await rpc<NudgeRpcRow[]>('get_nearby_nudges', { p_user_lat: lat, p_user_lng: lng });
     if (error) throw error;
-    return ((data ?? []) as NudgeRpcRow[]).map(toNudge);
+    const expiry = Date.now() - 30 * 60_000;
+    return ((data ?? []) as NudgeRpcRow[]).map(toNudge).filter((nudge) => Date.parse(nudge.created_at) > expiry);
   }
 
   async getNudge(id: string): Promise<Nudge | null> {
