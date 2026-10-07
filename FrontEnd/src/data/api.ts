@@ -7,6 +7,7 @@ import type {
   SkyMoment,
   SkyUser,
   UpdateSettingsInput,
+  UpdateMomentInput,
   VerificationSubmission,
 } from '../types/sky';
 
@@ -25,8 +26,10 @@ export interface SkyNudgeApi {
   blockUser(userId: string): Promise<void>;
   listMyMoments(): Promise<SkyMoment[]>;
   saveMoment(input: SaveMomentInput): Promise<SkyMoment>;
+  updateMoment(momentId: string, input: UpdateMomentInput): Promise<SkyMoment>;
+  deleteMoment(momentId: string): Promise<void>;
   addMomentPhotos(momentId: string, photos: File[]): Promise<SkyMoment>;
   subscribeToNudges(callback: (nudges: Nudge[]) => void): NudgeSubscription;
 }
 
-export type { Coordinates, CreateNudgeInput, Nudge, SaveMomentInput, SkyMoment, SkyUser, UpdateSettingsInput };
+export type { Coordinates, CreateNudgeInput, Nudge, SaveMomentInput, SkyMoment, SkyUser, UpdateMomentInput, UpdateSettingsInput };

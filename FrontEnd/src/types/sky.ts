@@ -68,6 +68,10 @@ export interface SaveMomentInput {
   notes?: string;
 }
 
+export interface UpdateMomentInput {
+  notes: string;
+}
+
 export interface VerificationSubmission {
   full_legal_name: string;
   phone_number: string;

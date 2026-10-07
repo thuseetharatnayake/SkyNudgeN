@@ -13,6 +13,7 @@ import type {
   SkyMoment,
   SkyUser,
   UpdateSettingsInput,
+  UpdateMomentInput,
   VerificationStatus,
   VerificationSubmission,
 } from '../types/sky';
@@ -70,6 +71,14 @@ type MomentPhotoInsertClient = {
 
 type InsertClient<T> = {
   insert: (values: T) => Promise<{ error: PostgrestError | null }>;
+};
+
+type MomentUpdateClient = {
+  update: (values: { note: string | null }) => { eq: (column: string, value: string) => Promise<{ error: PostgrestError | null }> };
+};
+
+type MomentDeleteClient = {
+  delete: () => { eq: (column: string, value: string) => Promise<{ error: PostgrestError | null }> };
 };
 
 function toSkyUser(user: User, profile: ProfileRow): SkyUser {
@@ -290,6 +299,34 @@ export class SupabaseSkyNudgeApi implements SkyNudgeApi {
     return moment;
   }
 
+  async updateMoment(momentId: string, input: UpdateMomentInput): Promise<SkyMoment> {
+    const note = input.notes.trim();
+    if (note.length > 2000) throw new Error('Sky Moment notes must be 2,000 characters or fewer.');
+    const moments = getSupabaseClient().from('sky_moments') as unknown as MomentUpdateClient;
+    const { error } = await moments.update({ note: note || null }).eq('id', momentId);
+    if (error) throw error;
+    const moment = await this.getMoment(momentId);
+    if (!moment) throw new Error('Sky Moment not found.');
+    return moment;
+  }
+
+  async deleteMoment(momentId: string): Promise<void> {
+    const supabase = getSupabaseClient();
+    const { data: photos, error: photosError } = await supabase
+      .from('sky_moment_photos')
+      .select('storage_path')
+      .eq('moment_id', momentId);
+    if (photosError) throw photosError;
+    const moments = supabase.from('sky_moments') as unknown as MomentDeleteClient;
+    const { error } = await moments.delete().eq('id', momentId);
+    if (error) throw error;
+    const paths = ((photos ?? []) as MomentPhotoRow[]).map((photo) => photo.storage_path);
+    if (paths.length > 0) {
+      const { error: storageError } = await supabase.storage.from('moment-photos').remove(paths);
+      if (storageError) console.warn('Sky Moment was deleted, but its private photo files could not be removed.', storageError);
+    }
+  }
+
   async addMomentPhotos(momentId: string, photos: File[]): Promise<SkyMoment> {
     if (photos.length === 0) {
       const moment = await this.getMoment(momentId);
@@ -350,7 +387,7 @@ export class SupabaseSkyNudgeApi implements SkyNudgeApi {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, username, verification_status')
+      .select('id, username, verification_status, share_exact_location, nearby_alerts, default_radius_km')
       .eq('id', user.id)
       .single();
 

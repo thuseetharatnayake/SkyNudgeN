@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useSkyNudgeApi } from '../app/providers/useSkyNudgeApi';
 import { useAuth } from '../app/providers/useAuth';
 import { MomentEntry } from '../components/moments/MomentEntry';
+import { CalendarGrid } from '../components/calendar/CalendarGrid';
 import { NudgeRow } from '../components/nudge/NudgeRow';
 import { Segmented } from '../components/ui/Segmented';
 import { Toggle } from '../components/ui/Toggle';
@@ -355,10 +356,17 @@ export const NudgeStepTwoPage = (): JSX.Element => <RoutePlaceholder eyebrow="Ne
 export const NudgeSuccessPage = (): JSX.Element => <RoutePlaceholder eyebrow="Sent" title="Your SkyNudge is live." description="Now put your phone down and look up." />;
 export function MomentsFeedPage(): JSX.Element {
   const api = useSkyNudgeApi();
+  const navigate = useNavigate();
   const [moments, setMoments] = useState<SkyMoment[]>([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [uploadingMomentId, setUploadingMomentId] = useState<string | null>(null);
+  const [editingMomentId, setEditingMomentId] = useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [deletingMomentId, setDeletingMomentId] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<Category | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadMoments = useCallback(async (): Promise<void> => {
     setError('');
@@ -387,17 +395,77 @@ export function MomentsFeedPage(): JSX.Element {
     }
   }
 
+  async function saveNotes(momentId: string): Promise<void> {
+    setError('');
+    setIsSavingNote(true);
+    try {
+      const updatedMoment = await api.updateMoment(momentId, { notes: noteDraft });
+      setMoments((current) => current.map((candidate) => candidate.id === updatedMoment.id ? updatedMoment : candidate));
+      setEditingMomentId(null);
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError));
+    } finally {
+      setIsSavingNote(false);
+    }
+  }
+
+  async function deleteMoment(moment: SkyMoment): Promise<void> {
+    if (!window.confirm(`Delete this ${moment.category} Sky Moment? This cannot be undone.`)) return;
+    setError('');
+    setDeletingMomentId(moment.id);
+    try {
+      await api.deleteMoment(moment.id);
+      setMoments((current) => current.filter((candidate) => candidate.id !== moment.id));
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError));
+    } finally {
+      setDeletingMomentId(null);
+    }
+  }
+
+  const normalizedSearch = searchQuery.trim().toLocaleLowerCase();
+  const filteredMoments = moments.filter((moment) => {
+    const matchesCategory = categoryFilter === 'all' || moment.category === categoryFilter;
+    const searchableText = `${moment.category} ${moment.location_label} ${moment.landmark ?? ''} ${moment.notes}`.toLocaleLowerCase();
+    return matchesCategory && (!normalizedSearch || searchableText.includes(normalizedSearch));
+  });
+
   return <div className="screen-page"><div className="page-stack"><div><p className="page-eyebrow">Private archive</p><h1 className="page-title">My Sky Moments</h1><p className="page-copy">Only you can view saved moments and their photos.</p></div>
+    <button className="sky-button sky-button--secondary sky-button--full" type="button" onClick={() => navigate('/moments/calendar')}>Browse by calendar</button>
+    <div className="moment-filters"><label className="sky-field"><span className="sky-field__label">Search moments</span><input className="sky-field__input" type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Location, category, or note" /></label><label className="sky-field"><span className="sky-field__label">Category</span><select className="sky-field__input" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value as Category | 'all')}><option value="all">All categories</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select></label></div>
     {error ? <p className="auth-error" role="alert">{error}</p> : null}
     {isLoading ? <p className="page-copy">Loading your private archive…</p> : null}
     {!isLoading && !error && moments.length === 0 ? <div className="placeholder-note">Save an active SkyNudge to begin your private archive.</div> : null}
-    <section className="moments-list" aria-label="My Sky Moments">{moments.map((moment) => <article key={moment.id} className="moment-archive-item"><MomentEntry moment={moment} />
-      <div className="moment-archive-item__actions"><label className="sky-button sky-button--secondary moment-upload-button">{uploadingMomentId === moment.id ? 'Uploading…' : `Add photos (${moment.photo_urls.length}/6)`}<input type="file" accept="image/jpeg,image/png" multiple disabled={uploadingMomentId !== null || moment.photo_urls.length >= 6} onChange={(event) => { void addPhotos(moment, event.target.files); event.currentTarget.value = ''; }} /></label></div>
+    {!isLoading && moments.length > 0 && filteredMoments.length === 0 ? <div className="placeholder-note">No Sky Moments match those filters.</div> : null}
+    <section className="moments-list" aria-label="My Sky Moments">{filteredMoments.map((moment) => <article key={moment.id} className="moment-archive-item"><MomentEntry moment={moment} />
+      <div className="moment-archive-item__actions"><label className="sky-button sky-button--secondary moment-upload-button">{uploadingMomentId === moment.id ? 'Uploading…' : `Add photos (${moment.photo_urls.length}/6)`}<input type="file" accept="image/jpeg,image/png" multiple disabled={uploadingMomentId !== null || moment.photo_urls.length >= 6} onChange={(event) => { void addPhotos(moment, event.target.files); event.currentTarget.value = ''; }} /></label><button className="sky-button sky-button--text" type="button" onClick={() => { setEditingMomentId(moment.id); setNoteDraft(moment.notes); }}>Edit note</button><button className="sky-button sky-button--danger" type="button" disabled={deletingMomentId === moment.id} onClick={() => void deleteMoment(moment)}>{deletingMomentId === moment.id ? 'Deleting…' : 'Delete'}</button></div>
+      {editingMomentId === moment.id ? <form className="moment-note-form" onSubmit={(event) => { event.preventDefault(); void saveNotes(moment.id); }}><label className="sky-field"><span className="sky-field__label">Private note</span><textarea className="sky-field__input moment-note-form__textarea" value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} maxLength={2000} placeholder="Add a private note" /></label><div className="moment-note-form__actions"><button className="sky-button sky-button--primary" type="submit" disabled={isSavingNote}>{isSavingNote ? 'Saving…' : 'Save note'}</button><button className="sky-button sky-button--text" type="button" disabled={isSavingNote} onClick={() => setEditingMomentId(null)}>Cancel</button></div></form> : null}
     </article>)}</section>
   </div></div>;
 }
-export const MomentsCalendarPage = (): JSX.Element => <RoutePlaceholder eyebrow="Private archive" title="My Sky Moments" description="Browse your private moments by day." />;
-export const SelectedDayPage = (): JSX.Element => <RoutePlaceholder eyebrow="Private archive" title="A day in the sky." description="Your saved moments from this selected day." />;
+export function MomentsCalendarPage(): JSX.Element {
+  const api = useSkyNudgeApi();
+  const navigate = useNavigate();
+  const [moments, setMoments] = useState<SkyMoment[]>([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => { void (async () => { try { setMoments(await api.listMyMoments()); } catch (caughtError) { setError(getErrorMessage(caughtError)); } })(); }, [api]);
+
+  return <div className="screen-page"><div className="page-stack"><div><p className="page-eyebrow">Private archive</p><h1 className="page-title">Calendar</h1><p className="page-copy">Choose a day to revisit your saved sky moments.</p></div><button className="sky-button sky-button--text" type="button" onClick={() => navigate('/moments')}>Back to all moments</button>{error ? <p className="auth-error" role="alert">{error}</p> : null}<CalendarGrid moments={moments} onSelectDay={(date) => navigate(`/moments/day/${date}`)} /></div></div>;
+}
+
+export function SelectedDayPage(): JSX.Element {
+  const api = useSkyNudgeApi();
+  const navigate = useNavigate();
+  const { date } = useParams();
+  const [moments, setMoments] = useState<SkyMoment[]>([]);
+  const [error, setError] = useState('');
+  const dayMoments = moments.filter((moment) => moment.occurred_at.slice(0, 10) === date);
+
+  useEffect(() => { void (async () => { try { setMoments(await api.listMyMoments()); } catch (caughtError) { setError(getErrorMessage(caughtError)); } })(); }, [api]);
+
+  return <div className="screen-page"><div className="page-stack"><div><p className="page-eyebrow">Selected day</p><h1 className="page-title">{date ? new Date(`${date}T12:00:00`).toLocaleDateString('en-AU', { dateStyle: 'full' }) : 'Sky Moments'}</h1></div><button className="sky-button sky-button--text" type="button" onClick={() => navigate('/moments/calendar')}>Back to calendar</button>{error ? <p className="auth-error" role="alert">{error}</p> : null}{dayMoments.length === 0 ? <div className="placeholder-note">No Sky Moments were saved on this day.</div> : <section className="moments-list" aria-label="Sky Moments on selected day">{dayMoments.map((moment) => <MomentEntry key={moment.id} moment={moment} />)}</section>}</div></div>;
+}
 export function AccountPage(): JSX.Element {
   const api = useSkyNudgeApi();
   const { refreshAuth } = useAuth();

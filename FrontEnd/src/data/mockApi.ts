@@ -7,6 +7,7 @@ import type {
   SkyMoment,
   SkyUser,
   UpdateSettingsInput,
+  UpdateMomentInput,
   VerificationSubmission,
 } from '../types/sky';
 
@@ -128,6 +129,21 @@ export class MockSkyNudgeApi implements SkyNudgeApi {
     const moment: SkyMoment = { id: `moment-${Date.now()}`, category: nudge.category, occurred_at: new Date().toISOString(), location_label: nudge.landmark ?? 'Near Melbourne CBD', direction: nudge.direction, landmark: nudge.landmark, notes: input.notes ?? '', photo_urls: nudge.photo_url ? [nudge.photo_url] : [] };
     this.moments = [moment, ...this.moments];
     return copyMoment(moment);
+  }
+
+  async updateMoment(momentId: string, input: UpdateMomentInput): Promise<SkyMoment> {
+    const moment = this.moments.find((candidate) => candidate.id === momentId);
+    if (!moment) throw new Error('Sky Moment not found.');
+    const notes = input.notes.trim();
+    if (notes.length > 2000) throw new Error('Sky Moment notes must be 2,000 characters or fewer.');
+    moment.notes = notes;
+    return copyMoment(moment);
+  }
+
+  async deleteMoment(momentId: string): Promise<void> {
+    const existingLength = this.moments.length;
+    this.moments = this.moments.filter((moment) => moment.id !== momentId);
+    if (this.moments.length === existingLength) throw new Error('Sky Moment not found.');
   }
 
   async addMomentPhotos(momentId: string, photos: File[]): Promise<SkyMoment> {
