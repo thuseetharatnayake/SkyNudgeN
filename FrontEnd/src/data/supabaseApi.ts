@@ -63,10 +63,6 @@ type MomentPhotoInsertClient = {
   insert: (values: { moment_id: string; user_id: string; storage_path: string; position: number }[]) => Promise<{ error: PostgrestError | null }>;
 };
 
-const notImplemented = (operation: string): never => {
-  throw new Error(`${operation} has not been connected to Supabase yet.`);
-};
-
 function toSkyUser(user: User, profile: ProfileRow): SkyUser {
   return {
     id: profile.id,
@@ -154,8 +150,18 @@ export class SupabaseSkyNudgeApi implements SkyNudgeApi {
     return data.user ? this.getProfileForUser(data.user) : null;
   }
 
-  async submitVerification(_submission: VerificationSubmission): Promise<SkyUser> {
-    return notImplemented('Verification submission');
+  async submitVerification(submission: VerificationSubmission): Promise<SkyUser> {
+    const supabase = getSupabaseClient();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    if (!userData.user) throw new Error('You must be signed in to submit verification.');
+    const { error } = await rpc<string>('submit_verification', {
+      p_full_legal_name: submission.full_legal_name,
+      p_phone_number: submission.phone_number,
+      p_consent: submission.consent,
+    });
+    if (error) throw error;
+    return this.getProfileForUser(userData.user);
   }
 
   async getNearbyNudges(lat: number, lng: number): Promise<Nudge[]> {

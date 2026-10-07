@@ -5,7 +5,7 @@ import { useAuth } from '../app/providers/useAuth';
 import { MomentEntry } from '../components/moments/MomentEntry';
 import { NudgeRow } from '../components/nudge/NudgeRow';
 import { RoutePlaceholder } from './RoutePlaceholder';
-import type { Category, Direction, Intensity, Nudge, RadiusKm, SkyMoment } from '../types/sky';
+import type { Category, Direction, Intensity, Nudge, RadiusKm, SkyMoment, SkyUser, VerificationStatus } from '../types/sky';
 
 const melbourneFallback = { lat: -37.8136, lng: 144.9631 };
 const categories: Category[] = ['sunset', 'sunrise', 'rainbow', 'clouds', 'moon', 'other'];
@@ -97,8 +97,68 @@ function AuthPage({ eyebrow, title, description, children }: AuthPageProps): JSX
   return <div className="screen-page screen-page--centered"><div className="page-stack"><div><p className="page-eyebrow">{eyebrow}</p><h1 className="page-title">{title}</h1><p className="page-copy">{description}</p></div>{children}</div></div>;
 }
 
-export const VerificationIntroPage = (): JSX.Element => <RoutePlaceholder eyebrow="Identity" title="A quieter way to know who is nearby." description="Learn how a private identity check works." />;
-export const VerificationFormPage = (): JSX.Element => <RoutePlaceholder eyebrow="Identity" title="Verify your account." description="Submit your legal name and phone number privately." />;
+export function VerificationIntroPage(): JSX.Element {
+  const api = useSkyNudgeApi();
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<SkyUser | null>(null);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    void (async () => {
+      try { setProfile(await api.getMyProfile()); }
+      catch (caughtError) { setError(getErrorMessage(caughtError)); }
+      finally { setIsLoading(false); }
+    })();
+  }, [api]);
+
+  if (isLoading) return <div className="screen-page"><p className="page-copy">Loading your verification status…</p></div>;
+  if (error) return <div className="screen-page"><p className="auth-error" role="alert">{error}</p></div>;
+  const status = profile?.verification_status ?? 'not_verified';
+  const statusCopy = verificationStatusCopy(status);
+  return <div className="screen-page screen-page--centered"><div className="page-stack"><div><p className="page-eyebrow">Identity</p><h1 className="page-title">A quieter way to know who is nearby.</h1><p className="page-copy">Verification is optional. Your legal name and phone number are submitted privately and are never shown on SkyNudges.</p></div>
+    <div className="placeholder-note"><strong>{statusCopy.title}</strong><p>{statusCopy.description}</p></div>
+    {status === 'not_verified' || status === 'rejected' ? <button className="sky-button sky-button--primary sky-button--full" type="button" onClick={() => navigate('/verification/form')}>{status === 'rejected' ? 'Submit a new request' : 'Start verification'}</button> : null}
+    <button className="sky-button sky-button--secondary sky-button--full" type="button" onClick={() => navigate('/account')}>Back to account</button>
+  </div></div>;
+}
+
+export function VerificationFormPage(): JSX.Element {
+  const api = useSkyNudgeApi();
+  const { refreshAuth } = useAuth();
+  const navigate = useNavigate();
+  const [fullLegalName, setFullLegalName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function submit(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    if (!consent) { setError('Consent is required to submit verification.'); return; }
+    setError('');
+    setIsSubmitting(true);
+    try {
+      await api.submitVerification({ full_legal_name: fullLegalName.trim(), phone_number: phoneNumber.trim(), consent });
+      await refreshAuth();
+      navigate('/verification', { replace: true });
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return <div className="screen-page"><div className="page-stack"><div><p className="page-eyebrow">Identity</p><h1 className="page-title">Verify your account.</h1><p className="page-copy">Your details are used only for this private verification request.</p></div>
+    <form className="auth-form" onSubmit={submit}>
+      <label className="auth-field"><span>Legal name</span><input autoComplete="name" value={fullLegalName} onChange={(event) => setFullLegalName(event.target.value)} maxLength={200} placeholder="Your full legal name" required /></label>
+      <label className="auth-field"><span>Phone number</span><input type="tel" autoComplete="tel" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} maxLength={50} placeholder="e.g. +61 400 000 000" required /></label>
+      <label className="nudge-checkbox"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /> I consent to SkyNudge using these details to review my verification request.</label>
+      {error ? <p className="auth-error" role="alert">{error}</p> : null}
+      <button className="auth-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Submitting…' : 'Submit verification'}</button>
+    </form>
+  </div></div>;
+}
 export const WelcomePage = (): JSX.Element => <RoutePlaceholder eyebrow="Welcome" title="The sky is waiting." description="Your anonymous account is ready." />;
 export function HomePage(): JSX.Element {
   const api = useSkyNudgeApi();
@@ -292,6 +352,14 @@ export function AccountPage(): JSX.Element {
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [profile, setProfile] = useState<SkyUser | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      try { setProfile(await api.getMyProfile()); }
+      catch (caughtError) { setError(getErrorMessage(caughtError)); }
+    })();
+  }, [api]);
 
   async function signOut(): Promise<void> {
     setError('');
@@ -307,8 +375,12 @@ export function AccountPage(): JSX.Element {
     }
   }
 
+  const status = profile?.verification_status ?? 'not_verified';
+  const statusCopy = verificationStatusCopy(status);
   return <div className="screen-page screen-page--centered"><div className="page-stack"><div><p className="page-eyebrow">Account</p><h1 className="page-title">Your sky identity.</h1><p className="page-copy">Your anonymous username and verification status are private to your account.</p></div>
+    {profile ? <div className="placeholder-note"><strong>{profile.username}</strong><p><strong>Verification: {statusCopy.title}</strong><br />{statusCopy.description}</p></div> : null}
     {error ? <p className="auth-error" role="alert">{error}</p> : null}
+    <button className="sky-button sky-button--primary sky-button--full" type="button" onClick={() => navigate('/verification')}>{status === 'not_verified' || status === 'rejected' ? 'Verify account' : 'View verification status'}</button>
     <button className="sky-button sky-button--secondary sky-button--full" type="button" disabled={isSigningOut} onClick={() => void signOut()}>{isSigningOut ? 'Signing out…' : 'Sign out'}</button>
   </div></div>;
 }
@@ -334,4 +406,13 @@ async function fetchNudgePhoto(url: string): Promise<File> {
   }
   const extension = photo.type === 'image/png' ? 'png' : 'jpg';
   return new File([photo], `saved-sky-moment.${extension}`, { type: photo.type });
+}
+
+function verificationStatusCopy(status: VerificationStatus): { title: string; description: string } {
+  switch (status) {
+    case 'pending': return { title: 'Pending review', description: 'Your private verification request has been submitted and is awaiting review.' };
+    case 'verified': return { title: 'Verified', description: 'Your account has completed verification.' };
+    case 'rejected': return { title: 'Not approved', description: 'Your previous request was not approved. You can submit a new request with accurate details.' };
+    default: return { title: 'Not verified', description: 'Verification is optional and helps build trust in the SkyNudge community.' };
+  }
 }
