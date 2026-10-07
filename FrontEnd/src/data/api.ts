@@ -19,6 +19,8 @@ export interface SkyNudgeApi {
   getNudge(id: string): Promise<Nudge | null>;
   createNudge(input: CreateNudgeInput): Promise<Nudge>;
   confirmSighting(id: string): Promise<Nudge>;
+  reportNudge(id: string, reason: string): Promise<void>;
+  blockUser(userId: string): Promise<void>;
   listMyMoments(): Promise<SkyMoment[]>;
   saveMoment(input: SaveMomentInput): Promise<SkyMoment>;
   addMomentPhotos(momentId: string, photos: File[]): Promise<SkyMoment>;

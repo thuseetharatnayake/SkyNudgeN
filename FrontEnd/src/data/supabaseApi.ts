@@ -32,6 +32,7 @@ type NudgeRpcRow = {
   note: string | null;
   photo_path: string | null;
   created_at: string;
+  poster_id: string;
   poster_username: string;
   poster_is_verified: boolean;
   seen_count: number | string;
@@ -63,6 +64,10 @@ type MomentPhotoInsertClient = {
   insert: (values: { moment_id: string; user_id: string; storage_path: string; position: number }[]) => Promise<{ error: PostgrestError | null }>;
 };
 
+type InsertClient<T> = {
+  insert: (values: T) => Promise<{ error: PostgrestError | null }>;
+};
+
 function toSkyUser(user: User, profile: ProfileRow): SkyUser {
   return {
     id: profile.id,
@@ -91,7 +96,7 @@ function toNudge(row: NudgeRpcRow): Nudge {
     coordinates: { lat: Number(row.latitude), lng: Number(row.longitude) },
     created_at: row.created_at,
     poster: {
-      id: '',
+      id: row.poster_id,
       username: row.poster_username,
       verification_status: row.poster_is_verified ? 'verified' : 'not_verified',
     },
@@ -222,6 +227,29 @@ export class SupabaseSkyNudgeApi implements SkyNudgeApi {
     const nudge = await this.getNudge(id);
     if (!nudge) throw new Error('SkyNudge not found or expired.');
     return nudge;
+  }
+
+  async reportNudge(id: string, reason: string): Promise<void> {
+    const trimmedReason = reason.trim();
+    if (trimmedReason.length === 0 || trimmedReason.length > 500) throw new Error('A report reason must be between 1 and 500 characters.');
+    const supabase = getSupabaseClient();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    if (!userData.user) throw new Error('You must be signed in to report a SkyNudge.');
+    const reports = supabase.from('reports') as unknown as InsertClient<{ reporter_id: string; nudge_id: string; reason: string }>;
+    const { error } = await reports.insert({ reporter_id: userData.user.id, nudge_id: id, reason: trimmedReason });
+    if (error) throw error;
+  }
+
+  async blockUser(userId: string): Promise<void> {
+    const supabase = getSupabaseClient();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    if (!userData.user) throw new Error('You must be signed in to block a user.');
+    if (userData.user.id === userId) throw new Error('You cannot block yourself.');
+    const blocks = supabase.from('user_blocks') as unknown as InsertClient<{ blocker_id: string; blocked_id: string }>;
+    const { error } = await blocks.insert({ blocker_id: userData.user.id, blocked_id: userId });
+    if (error && error.code !== '23505') throw error;
   }
 
   async listMyMoments(): Promise<SkyMoment[]> {

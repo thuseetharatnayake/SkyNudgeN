@@ -351,7 +351,7 @@ CREATE FUNCTION public.get_nearby_nudges(p_user_lat double precision, p_user_lng
 RETURNS TABLE (
   id uuid, category public.sky_category, intensity public.nudge_intensity, direction public.nudge_direction,
   radius_km integer, landmark text, note text, photo_path text, area_label text, created_at timestamptz,
-  expires_at timestamptz, minutes_left integer, distance_km numeric, poster_username text,
+  expires_at timestamptz, minutes_left integer, distance_km numeric, poster_id uuid, poster_username text,
   poster_is_verified boolean, seen_count bigint, i_saw_it boolean, latitude double precision,
   longitude double precision, location_is_exact boolean
 )
@@ -366,7 +366,7 @@ AS $$
          n.created_at, n.expires_at,
          greatest(0, ceil(extract(epoch FROM (n.expires_at - now())) / 60)::integer),
          round((extensions.ST_Distance(n.approx_location, caller.location) / 1000.0) * 2) / 2,
-         profile.username, (profile.verification_status = 'verified'),
+         n.user_id, profile.username, (profile.verification_status = 'verified'),
          (SELECT count(*) FROM public.nudge_sightings sighting WHERE sighting.nudge_id = n.id),
          EXISTS (SELECT 1 FROM public.nudge_sightings mine WHERE mine.nudge_id = n.id AND mine.user_id = auth.uid()),
          extensions.ST_Y((CASE WHEN n.share_exact THEN n.exact_location ELSE n.approx_location END)::extensions.geometry),
@@ -388,7 +388,7 @@ CREATE FUNCTION public.get_nudge(p_nudge_id uuid)
 RETURNS TABLE (
   id uuid, category public.sky_category, intensity public.nudge_intensity, direction public.nudge_direction,
   radius_km integer, landmark text, note text, photo_path text, area_label text, created_at timestamptz,
-  expires_at timestamptz, minutes_left integer, distance_km numeric, poster_username text,
+  expires_at timestamptz, minutes_left integer, distance_km numeric, poster_id uuid, poster_username text,
   poster_is_verified boolean, seen_count bigint, i_saw_it boolean, latitude double precision,
   longitude double precision, location_is_exact boolean
 )
@@ -400,7 +400,7 @@ AS $$
          n.created_at, n.expires_at,
          greatest(0, ceil(extract(epoch FROM (n.expires_at - now())) / 60)::integer),
          NULL::numeric,
-         profile.username, (profile.verification_status = 'verified'),
+         n.user_id, profile.username, (profile.verification_status = 'verified'),
          (SELECT count(*) FROM public.nudge_sightings sighting WHERE sighting.nudge_id = n.id),
          EXISTS (SELECT 1 FROM public.nudge_sightings mine WHERE mine.nudge_id = n.id AND mine.user_id = auth.uid()),
          extensions.ST_Y((CASE WHEN n.share_exact THEN n.exact_location ELSE n.approx_location END)::extensions.geometry),
@@ -426,6 +426,7 @@ BEGIN
   SELECT user_id INTO nudge_owner FROM public.nudges WHERE id = p_nudge_id AND expires_at > now();
   IF nudge_owner IS NULL THEN RAISE EXCEPTION 'SkyNudge not found or expired.'; END IF;
   IF nudge_owner = auth.uid() THEN RAISE EXCEPTION 'You cannot confirm your own SkyNudge.'; END IF;
+  IF EXISTS (SELECT 1 FROM public.user_blocks block WHERE block.blocker_id = auth.uid() AND block.blocked_id = nudge_owner) THEN RAISE EXCEPTION 'SkyNudge not found or expired.'; END IF;
   INSERT INTO public.nudge_sightings (nudge_id, user_id) VALUES (p_nudge_id, auth.uid()) ON CONFLICT DO NOTHING;
   SELECT count(*) INTO new_seen_count FROM public.nudge_sightings WHERE nudge_id = p_nudge_id;
   RETURN new_seen_count;

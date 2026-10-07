@@ -193,6 +193,7 @@ export function HomePage(): JSX.Element {
 
 export function ActiveMomentPage(): JSX.Element {
   const api = useSkyNudgeApi();
+  const navigate = useNavigate();
   const { nudgeId } = useParams();
   const [nudge, setNudge] = useState<Nudge | null>(null);
   const [error, setError] = useState('');
@@ -200,6 +201,10 @@ export function ActiveMomentPage(): JSX.Element {
   const [isConfirming, setIsConfirming] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedMessage, setSavedMessage] = useState('');
+  const [reportReason, setReportReason] = useState('');
+  const [isReporting, setIsReporting] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
+  const [showReportForm, setShowReportForm] = useState(false);
 
   const loadNudge = useCallback(async (): Promise<void> => {
     if (!nudgeId) return;
@@ -244,6 +249,36 @@ export function ActiveMomentPage(): JSX.Element {
     }
   }
 
+  async function report(): Promise<void> {
+    if (!nudge) return;
+    setIsReporting(true);
+    setError('');
+    try {
+      await api.reportNudge(nudge.id, reportReason);
+      setReportReason('');
+      setShowReportForm(false);
+      setSavedMessage('Thanks. Your report has been submitted for review.');
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError));
+    } finally {
+      setIsReporting(false);
+    }
+  }
+
+  async function blockPoster(): Promise<void> {
+    if (!nudge) return;
+    setIsBlocking(true);
+    setError('');
+    try {
+      await api.blockUser(nudge.poster.id);
+      navigate('/home', { replace: true });
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError));
+    } finally {
+      setIsBlocking(false);
+    }
+  }
+
   if (isLoading) return <div className="screen-page"><p className="page-copy">Loading SkyNudge…</p></div>;
   if (error) return <div className="screen-page"><p className="auth-error" role="alert">{error}</p></div>;
   if (!nudge) return <div className="screen-page"><p className="placeholder-note">This SkyNudge is no longer active or is unavailable.</p></div>;
@@ -253,6 +288,8 @@ export function ActiveMomentPage(): JSX.Element {
     {nudge.confirmed_by_me ? <p className="auth-message">You confirmed this SkyNudge.</p> : <button className="sky-button sky-button--primary sky-button--full" type="button" disabled={isConfirming} onClick={() => void confirm()}>{isConfirming ? 'Confirming…' : 'I can see it too'}</button>}
     {savedMessage ? <p className="auth-message">{savedMessage}</p> : null}
     <button className="sky-button sky-button--secondary sky-button--full" type="button" disabled={isSaving} onClick={() => void saveAsMoment()}>{isSaving ? 'Saving…' : 'Save as Sky Moment'}</button>
+    <div className="safety-actions"><button className="sky-button sky-button--text" type="button" onClick={() => setShowReportForm((visible) => !visible)}>Report this SkyNudge</button><button className="sky-button sky-button--danger" type="button" disabled={isBlocking} onClick={() => void blockPoster()}>{isBlocking ? 'Blocking…' : `Block ${nudge.poster.username}`}</button></div>
+    {showReportForm ? <form className="report-form" onSubmit={(event) => { event.preventDefault(); void report(); }}><label className="sky-field"><span className="sky-field__label">Why are you reporting this?</span><textarea className="sky-field__input report-form__textarea" value={reportReason} onChange={(event) => setReportReason(event.target.value)} maxLength={500} placeholder="Describe the issue" required /></label><button className="sky-button sky-button--danger" type="submit" disabled={isReporting}>{isReporting ? 'Sending report…' : 'Submit report'}</button></form> : null}
   </div></div>;
 }
 

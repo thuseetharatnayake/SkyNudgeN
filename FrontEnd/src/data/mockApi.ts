@@ -56,6 +56,7 @@ export class MockSkyNudgeApi implements SkyNudgeApi {
   private nudges = melbourneNudges.map(copyNudge);
   private moments = initialMoments.map(copyMoment);
   private subscribers = new Set<(nudges: Nudge[]) => void>();
+  private blockedUserIds = new Set<string>();
 
   async signUp(email: string, _password: string): Promise<SkyUser> {
     this.profile = { ...copyUser(initialProfile), email, username: 'CloudDrifter482', verification_status: 'not_verified' };
@@ -77,12 +78,12 @@ export class MockSkyNudgeApi implements SkyNudgeApi {
   }
 
   async getNearbyNudges(_lat: number, _lng: number): Promise<Nudge[]> {
-    return this.nudges.filter((nudge) => Date.parse(nudge.created_at) > Date.now() - 30 * 60_000).map(copyNudge);
+    return this.nudges.filter((nudge) => Date.parse(nudge.created_at) > Date.now() - 30 * 60_000 && !this.blockedUserIds.has(nudge.poster.id)).map(copyNudge);
   }
 
   async getNudge(id: string): Promise<Nudge | null> {
     const nudge = this.nudges.find((candidate) => candidate.id === id);
-    return nudge ? copyNudge(nudge) : null;
+    return nudge && !this.blockedUserIds.has(nudge.poster.id) ? copyNudge(nudge) : null;
   }
 
   async createNudge(input: CreateNudgeInput): Promise<Nudge> {
@@ -98,6 +99,18 @@ export class MockSkyNudgeApi implements SkyNudgeApi {
     if (!nudge) throw new Error('SkyNudge not found.');
     if (!nudge.confirmed_by_me) { nudge.confirmed_by_me = true; nudge.watcher_count += 1; this.notify(); }
     return copyNudge(nudge);
+  }
+
+  async reportNudge(id: string, reason: string): Promise<void> {
+    if (!this.nudges.some((nudge) => nudge.id === id)) throw new Error('SkyNudge not found.');
+    if (reason.trim().length === 0 || reason.trim().length > 500) throw new Error('A report reason must be between 1 and 500 characters.');
+  }
+
+  async blockUser(userId: string): Promise<void> {
+    if (!this.profile) throw new Error('You must be signed in to block a user.');
+    if (userId === this.profile.id) throw new Error('You cannot block yourself.');
+    this.blockedUserIds.add(userId);
+    this.notify();
   }
 
   async listMyMoments(): Promise<SkyMoment[]> { return [...this.moments].sort((a, b) => Date.parse(b.occurred_at) - Date.parse(a.occurred_at)).map(copyMoment); }

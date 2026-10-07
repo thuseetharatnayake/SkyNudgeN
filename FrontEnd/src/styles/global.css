@@ -47,3 +47,7 @@ a { color: inherit; }
 .moment-archive-item__actions { padding: 0 0 var(--space-4); }
 .moment-upload-button { display: inline-grid; place-items: center; min-height: 40px; padding: 0 var(--space-4); border-radius: var(--radius-small); font-size: 14px; cursor: pointer; }
 .moment-upload-button input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+.safety-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.safety-actions .sky-button { padding: 0 var(--space-2); }
+.report-form { display: grid; gap: var(--space-3); padding: var(--space-4); background: var(--color-very-light-blue); border: 1px solid var(--color-border); border-radius: var(--radius-medium); }
+.report-form__textarea { min-height: 112px; padding: var(--space-3); resize: vertical; }
