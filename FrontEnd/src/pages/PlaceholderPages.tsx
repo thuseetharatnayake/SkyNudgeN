@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useSkyNudgeApi } from '../app/providers/useSkyNudgeApi';
+import { useAuth } from '../app/providers/useAuth';
 import { NudgeRow } from '../components/nudge/NudgeRow';
 import { RoutePlaceholder } from './RoutePlaceholder';
 import type { Category, Direction, Intensity, Nudge, RadiusKm } from '../types/sky';
@@ -17,6 +18,7 @@ function getErrorMessage(error: unknown): string {
 
 export function LoginPage(): JSX.Element {
   const api = useSkyNudgeApi();
+  const { refreshAuth } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,6 +31,7 @@ export function LoginPage(): JSX.Element {
     setIsSubmitting(true);
     try {
       await api.signIn(email, password);
+      await refreshAuth();
       navigate('/home', { replace: true });
     } catch (caughtError) {
       setError(getErrorMessage(caughtError));
@@ -50,6 +53,7 @@ export function LoginPage(): JSX.Element {
 
 export function CreateAccountPage(): JSX.Element {
   const api = useSkyNudgeApi();
+  const { refreshAuth } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -64,6 +68,7 @@ export function CreateAccountPage(): JSX.Element {
     setIsSubmitting(true);
     try {
       await api.signUp(email, password);
+      await refreshAuth();
       navigate('/welcome', { replace: true });
     } catch (caughtError) {
       const nextMessage = getErrorMessage(caughtError);
@@ -207,7 +212,32 @@ export const NudgeSuccessPage = (): JSX.Element => <RoutePlaceholder eyebrow="Se
 export const MomentsFeedPage = (): JSX.Element => <RoutePlaceholder eyebrow="Private archive" title="My Sky Moments" description="Private. Only you can see these." />;
 export const MomentsCalendarPage = (): JSX.Element => <RoutePlaceholder eyebrow="Private archive" title="My Sky Moments" description="Browse your private moments by day." />;
 export const SelectedDayPage = (): JSX.Element => <RoutePlaceholder eyebrow="Private archive" title="A day in the sky." description="Your saved moments from this selected day." />;
-export const AccountPage = (): JSX.Element => <RoutePlaceholder eyebrow="Account" title="Your sky identity." description="Your anonymous username and verification status." />;
+export function AccountPage(): JSX.Element {
+  const api = useSkyNudgeApi();
+  const { refreshAuth } = useAuth();
+  const navigate = useNavigate();
+  const [error, setError] = useState('');
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  async function signOut(): Promise<void> {
+    setError('');
+    setIsSigningOut(true);
+    try {
+      await api.signOut();
+      await refreshAuth();
+      navigate('/login', { replace: true });
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError));
+    } finally {
+      setIsSigningOut(false);
+    }
+  }
+
+  return <div className="screen-page screen-page--centered"><div className="page-stack"><div><p className="page-eyebrow">Account</p><h1 className="page-title">Your sky identity.</h1><p className="page-copy">Your anonymous username and verification status are private to your account.</p></div>
+    {error ? <p className="auth-error" role="alert">{error}</p> : null}
+    <button className="sky-button sky-button--secondary sky-button--full" type="button" disabled={isSigningOut} onClick={() => void signOut()}>{isSigningOut ? 'Signing out…' : 'Sign out'}</button>
+  </div></div>;
+}
 export const SettingsPage = (): JSX.Element => <RoutePlaceholder eyebrow="Settings" title="Your preferences." description="Control location sharing, alerts, and your default radius." />;
 
 function getCurrentLocation(): Promise<{ lat: number; lng: number }> {

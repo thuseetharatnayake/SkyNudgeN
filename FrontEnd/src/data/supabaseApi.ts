@@ -1,4 +1,5 @@
 import type { User } from '@supabase/supabase-js';
+import type { PostgrestError } from '@supabase/supabase-js';
 import type { SkyNudgeApi } from './api';
 import { getSupabaseClient } from '../lib/supabase';
 import type {
@@ -37,6 +38,10 @@ type NudgeRpcRow = {
   i_saw_it: boolean;
   latitude: number | string;
   longitude: number | string;
+};
+
+type UntypedRpcClient = {
+  rpc: <T>(functionName: string, arguments_: Record<string, unknown>) => Promise<{ data: T | null; error: PostgrestError | null }>;
 };
 
 const notImplemented = (operation: string): never => {
@@ -82,6 +87,10 @@ function toNudge(row: NudgeRpcRow): Nudge {
   };
 }
 
+function rpc<T>(functionName: string, arguments_: Record<string, unknown>): Promise<{ data: T | null; error: PostgrestError | null }> {
+  return (getSupabaseClient() as unknown as UntypedRpcClient).rpc<T>(functionName, arguments_);
+}
+
 export class SupabaseSkyNudgeApi implements SkyNudgeApi {
   async signUp(email: string, password: string): Promise<SkyUser> {
     const supabase = getSupabaseClient();
@@ -122,26 +131,23 @@ export class SupabaseSkyNudgeApi implements SkyNudgeApi {
   }
 
   async getNearbyNudges(lat: number, lng: number): Promise<Nudge[]> {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase.rpc('get_nearby_nudges', { p_user_lat: lat, p_user_lng: lng });
+    const { data, error } = await rpc<NudgeRpcRow[]>('get_nearby_nudges', { p_user_lat: lat, p_user_lng: lng });
     if (error) throw error;
     return ((data ?? []) as NudgeRpcRow[]).map(toNudge);
   }
 
   async getNudge(id: string): Promise<Nudge | null> {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase.rpc('get_nudge', { p_nudge_id: id });
+    const { data, error } = await rpc<NudgeRpcRow[]>('get_nudge', { p_nudge_id: id });
     if (error) throw error;
     const row = (data as NudgeRpcRow[] | null)?.[0];
     return row ? toNudge(row) : null;
   }
 
   async createNudge(input: CreateNudgeInput): Promise<Nudge> {
-    const supabase = getSupabaseClient();
     if (input.photo_data_url) {
       throw new Error('Photo uploads will be connected in the next storage phase. Create the nudge without a photo for now.');
     }
-    const { data, error } = await supabase.rpc('create_nudge', {
+    const { data, error } = await rpc<string>('create_nudge', {
       p_category: input.category,
       p_intensity: input.intensity,
       p_direction: input.direction,
@@ -161,8 +167,7 @@ export class SupabaseSkyNudgeApi implements SkyNudgeApi {
   }
 
   async confirmSighting(id: string): Promise<Nudge> {
-    const supabase = getSupabaseClient();
-    const { error } = await supabase.rpc('confirm_sighting', { p_nudge_id: id });
+    const { error } = await rpc<number>('confirm_sighting', { p_nudge_id: id });
     if (error) throw error;
     const nudge = await this.getNudge(id);
     if (!nudge) throw new Error('SkyNudge not found or expired.');
