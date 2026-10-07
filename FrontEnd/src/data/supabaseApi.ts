@@ -12,6 +12,7 @@ import type {
   SaveMomentInput,
   SkyMoment,
   SkyUser,
+  UpdateSettingsInput,
   VerificationStatus,
   VerificationSubmission,
 } from '../types/sky';
@@ -20,6 +21,9 @@ type ProfileRow = {
   id: string;
   username: string;
   verification_status: VerificationStatus;
+  share_exact_location: boolean;
+  nearby_alerts: boolean;
+  default_radius_km: RadiusKm;
 };
 
 type NudgeRpcRow = {
@@ -74,10 +78,9 @@ function toSkyUser(user: User, profile: ProfileRow): SkyUser {
     username: profile.username,
     verification_status: profile.verification_status,
     email: user.email ?? '',
-    // These UI preferences are not database fields in the current schema yet.
-    share_exact_location: false,
-    nearby_alerts: true,
-    default_radius_km: 5,
+    share_exact_location: profile.share_exact_location,
+    nearby_alerts: profile.nearby_alerts,
+    default_radius_km: profile.default_radius_km,
   };
 }
 
@@ -153,6 +156,19 @@ export class SupabaseSkyNudgeApi implements SkyNudgeApi {
     const { data, error } = await supabase.auth.getUser();
     if (error) throw error;
     return data.user ? this.getProfileForUser(data.user) : null;
+  }
+
+  async updateMySettings(input: UpdateSettingsInput): Promise<SkyUser> {
+    const { data: userData, error: userError } = await getSupabaseClient().auth.getUser();
+    if (userError) throw userError;
+    if (!userData.user) throw new Error('You must be signed in to update settings.');
+    const { error } = await rpc<void>('update_my_settings', {
+      p_share_exact_location: input.share_exact_location,
+      p_nearby_alerts: input.nearby_alerts,
+      p_default_radius_km: input.default_radius_km,
+    });
+    if (error) throw error;
+    return this.getProfileForUser(userData.user);
   }
 
   async submitVerification(submission: VerificationSubmission): Promise<SkyUser> {

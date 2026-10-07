@@ -4,6 +4,8 @@ import { useSkyNudgeApi } from '../app/providers/useSkyNudgeApi';
 import { useAuth } from '../app/providers/useAuth';
 import { MomentEntry } from '../components/moments/MomentEntry';
 import { NudgeRow } from '../components/nudge/NudgeRow';
+import { Segmented } from '../components/ui/Segmented';
+import { Toggle } from '../components/ui/Toggle';
 import { RoutePlaceholder } from './RoutePlaceholder';
 import type { Category, Direction, Intensity, Nudge, RadiusKm, SkyMoment, SkyUser, VerificationStatus } from '../types/sky';
 
@@ -306,6 +308,19 @@ export function NudgeStepOnePage(): JSX.Element {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    void (async () => {
+      try {
+        const profile = await api.getMyProfile();
+        if (!profile) return;
+        setRadiusKm(profile.default_radius_km);
+        setShareExactLocation(profile.share_exact_location);
+      } catch (caughtError) {
+        setError(getErrorMessage(caughtError));
+      }
+    })();
+  }, [api]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setError('');
@@ -421,7 +436,59 @@ export function AccountPage(): JSX.Element {
     <button className="sky-button sky-button--secondary sky-button--full" type="button" disabled={isSigningOut} onClick={() => void signOut()}>{isSigningOut ? 'Signing out…' : 'Sign out'}</button>
   </div></div>;
 }
-export const SettingsPage = (): JSX.Element => <RoutePlaceholder eyebrow="Settings" title="Your preferences." description="Control location sharing, alerts, and your default radius." />;
+export function SettingsPage(): JSX.Element {
+  const api = useSkyNudgeApi();
+  const [profile, setProfile] = useState<SkyUser | null>(null);
+  const [shareExactLocation, setShareExactLocation] = useState(false);
+  const [nearbyAlerts, setNearbyAlerts] = useState(true);
+  const [defaultRadiusKm, setDefaultRadiusKm] = useState<RadiusKm>(5);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const currentProfile = await api.getMyProfile();
+        if (!currentProfile) throw new Error('You must be signed in to view settings.');
+        setProfile(currentProfile);
+        setShareExactLocation(currentProfile.share_exact_location);
+        setNearbyAlerts(currentProfile.nearby_alerts);
+        setDefaultRadiusKm(currentProfile.default_radius_km);
+      } catch (caughtError) {
+        setError(getErrorMessage(caughtError));
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [api]);
+
+  async function saveSettings(): Promise<void> {
+    setError('');
+    setMessage('');
+    setIsSaving(true);
+    try {
+      setProfile(await api.updateMySettings({ share_exact_location: shareExactLocation, nearby_alerts: nearbyAlerts, default_radius_km: defaultRadiusKm }));
+      setMessage('Your preferences have been saved.');
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  if (isLoading) return <div className="screen-page"><p className="page-copy">Loading preferences…</p></div>;
+  return <div className="screen-page"><div className="page-stack"><div><p className="page-eyebrow">Settings</p><h1 className="page-title">Your preferences.</h1><p className="page-copy">Choose safe defaults for new SkyNudges and nearby updates.</p></div>
+    {profile ? <p className="page-copy">Signed in as <strong>{profile.username}</strong>.</p> : null}
+    {error ? <p className="auth-error" role="alert">{error}</p> : null}
+    {message ? <p className="auth-message" role="status">{message}</p> : null}
+    <section className="settings-section" aria-labelledby="settings-privacy"><p className="page-eyebrow" id="settings-privacy">Privacy</p><div className="settings-row"><div><strong>Share exact location by default</strong><p>Off by default. You can still change this for every SkyNudge.</p></div><Toggle checked={shareExactLocation} onChange={setShareExactLocation} label="Share exact location by default" disabled={isSaving} /></div></section>
+    <section className="settings-section" aria-labelledby="settings-alerts"><p className="page-eyebrow" id="settings-alerts">Alerts</p><div className="settings-row"><div><strong>Nearby SkyNudge alerts</strong><p>Receive nearby alert preferences when notifications are available.</p></div><Toggle checked={nearbyAlerts} onChange={setNearbyAlerts} label="Nearby SkyNudge alerts" disabled={isSaving} /></div></section>
+    <section className="settings-section" aria-labelledby="settings-radius"><p className="page-eyebrow" id="settings-radius">New SkyNudge default</p><div className="settings-radius"><strong>Default sharing radius</strong><p>Set the initial audience radius for new SkyNudges.</p><Segmented options={radii.map((value) => ({ value, label: `${value} km` }))} value={defaultRadiusKm} onChange={setDefaultRadiusKm} label="Default sharing radius" /></div></section>
+    <button className="sky-button sky-button--primary sky-button--full" type="button" disabled={isSaving} onClick={() => void saveSettings()}>{isSaving ? 'Saving…' : 'Save preferences'}</button>
+  </div></div>;
+}
 
 function getCurrentLocation(): Promise<{ lat: number; lng: number }> {
   if (!navigator.geolocation) return Promise.resolve(melbourneFallback);

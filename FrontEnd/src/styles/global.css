@@ -51,3 +51,9 @@ a { color: inherit; }
 .safety-actions .sky-button { padding: 0 var(--space-2); }
 .report-form { display: grid; gap: var(--space-3); padding: var(--space-4); background: var(--color-very-light-blue); border: 1px solid var(--color-border); border-radius: var(--radius-medium); }
 .report-form__textarea { min-height: 112px; padding: var(--space-3); resize: vertical; }
+.settings-section { display: grid; gap: var(--space-3); padding: var(--space-4); background: var(--color-very-light-blue); border: 1px solid var(--color-border); border-radius: var(--radius-medium); }
+.settings-section .page-eyebrow { margin: 0; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+.settings-row strong, .settings-radius strong { display: block; }
+.settings-row p, .settings-radius p { margin: var(--space-1) 0 0; color: var(--color-text-secondary); line-height: 1.45; }
+.settings-radius { display: grid; gap: var(--space-2); }

@@ -19,6 +19,12 @@ export interface SkyUser {
   default_radius_km: RadiusKm;
 }
 
+export interface UpdateSettingsInput {
+  share_exact_location: boolean;
+  nearby_alerts: boolean;
+  default_radius_km: RadiusKm;
+}
+
 export interface Nudge {
   id: string;
   category: Category;

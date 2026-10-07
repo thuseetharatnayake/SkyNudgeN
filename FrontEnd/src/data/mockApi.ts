@@ -6,6 +6,7 @@ import type {
   SaveMomentInput,
   SkyMoment,
   SkyUser,
+  UpdateSettingsInput,
   VerificationSubmission,
 } from '../types/sky';
 
@@ -70,6 +71,12 @@ export class MockSkyNudgeApi implements SkyNudgeApi {
 
   async signOut(): Promise<void> { this.profile = null; }
   async getMyProfile(): Promise<SkyUser | null> { return this.profile ? copyUser(this.profile) : null; }
+
+  async updateMySettings(input: UpdateSettingsInput): Promise<SkyUser> {
+    if (!this.profile) throw new Error('You must be signed in to update settings.');
+    this.profile = { ...this.profile, ...input };
+    return copyUser(this.profile);
+  }
 
   async submitVerification(_submission: VerificationSubmission): Promise<SkyUser> {
     if (!this.profile) throw new Error('You must be signed in to submit verification.');

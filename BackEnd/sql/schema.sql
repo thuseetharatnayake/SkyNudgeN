@@ -40,8 +40,17 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username text NOT NULL UNIQUE,
   verification_status public.verification_status NOT NULL DEFAULT 'not_verified',
+  share_exact_location boolean NOT NULL DEFAULT false,
+  nearby_alerts boolean NOT NULL DEFAULT true,
+  default_radius_km integer NOT NULL DEFAULT 5 CHECK (default_radius_km IN (2, 5, 10)),
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS share_exact_location boolean NOT NULL DEFAULT false;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS nearby_alerts boolean NOT NULL DEFAULT true;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS default_radius_km integer NOT NULL DEFAULT 5;
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_default_radius_km_check;
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_default_radius_km_check CHECK (default_radius_km IN (2, 5, 10));
 
 CREATE TABLE IF NOT EXISTS public.verification_requests (
   id uuid PRIMARY KEY DEFAULT extensions.gen_random_uuid(),
@@ -474,6 +483,28 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.update_my_settings(
+  p_share_exact_location boolean,
+  p_nearby_alerts boolean,
+  p_default_radius_km integer
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'You must be signed in.'; END IF;
+  IF p_default_radius_km NOT IN (2, 5, 10) THEN RAISE EXCEPTION 'Default radius must be 2, 5, or 10 km.'; END IF;
+  UPDATE public.profiles
+  SET share_exact_location = p_share_exact_location,
+      nearby_alerts = p_nearby_alerts,
+      default_radius_km = p_default_radius_km
+  WHERE id = auth.uid();
+  IF NOT FOUND THEN RAISE EXCEPTION 'Profile not found.'; END IF;
+END;
+$$;
+
 -- Administrative only. It is deliberately not granted to anon or authenticated.
 CREATE OR REPLACE FUNCTION public.review_verification(p_request_id uuid, p_decision public.verification_status)
 RETURNS void
@@ -512,6 +543,7 @@ REVOKE ALL ON FUNCTION public.get_nudge(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.confirm_sighting(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.save_nudge_as_moment(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.submit_verification(text, text, boolean) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.update_my_settings(boolean, boolean, integer) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.review_verification(uuid, public.verification_status) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.delete_my_account() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.create_nudge(public.sky_category, public.nudge_intensity, public.nudge_direction, integer, text, text, text, double precision, double precision, boolean, text) TO authenticated;
@@ -520,6 +552,7 @@ GRANT EXECUTE ON FUNCTION public.get_nudge(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.confirm_sighting(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.save_nudge_as_moment(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.submit_verification(text, text, boolean) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.update_my_settings(boolean, boolean, integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.delete_my_account() TO authenticated;
 
 -- ============================================================================
