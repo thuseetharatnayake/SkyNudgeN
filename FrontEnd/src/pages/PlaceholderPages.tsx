@@ -166,8 +166,17 @@ export function ActiveMomentPage(): JSX.Element {
     setError('');
     setSavedMessage('');
     try {
-      await api.saveMoment({ nudge_id: nudge.id });
-      setSavedMessage('Saved to your private Sky Moments archive.');
+      const moment = await api.saveMoment({ nudge_id: nudge.id });
+      if (!nudge.photo_url) {
+        setSavedMessage('Saved to your private Sky Moments archive.');
+        return;
+      }
+      try {
+        await api.addMomentPhotos(moment.id, [await fetchNudgePhoto(nudge.photo_url)]);
+        setSavedMessage('Saved to your private Sky Moments archive with its photo.');
+      } catch {
+        setSavedMessage('Saved to your private Sky Moments archive. The shared photo could not be copied, but you can add it manually.');
+      }
     } catch (caughtError) {
       setError(getErrorMessage(caughtError));
     } finally {
@@ -314,4 +323,15 @@ function getCurrentLocation(): Promise<{ lat: number; lng: number }> {
       { enableHighAccuracy: false, timeout: 8_000, maximumAge: 60_000 },
     );
   });
+}
+
+async function fetchNudgePhoto(url: string): Promise<File> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('The shared photo could not be downloaded.');
+  const photo = await response.blob();
+  if (photo.type !== 'image/jpeg' && photo.type !== 'image/png') {
+    throw new Error('The shared photo is not a JPEG or PNG image.');
+  }
+  const extension = photo.type === 'image/png' ? 'png' : 'jpg';
+  return new File([photo], `saved-sky-moment.${extension}`, { type: photo.type });
 }
