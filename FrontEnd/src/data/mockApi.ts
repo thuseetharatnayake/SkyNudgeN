@@ -1,4 +1,6 @@
 import type { SkyNudgeApi } from './api';
+import { demoSkyImage } from '../lib/demoSky';
+import { localDateKey } from '../lib/moments';
 import type {
   CreateNudgeInput,
   Nudge,
@@ -39,14 +41,17 @@ const melbourneNudges: Nudge[] = [
   { id: 'nudge-8', category: 'other', intensity: 'beautiful', direction: 'south', radius_km: 2, landmark: 'Albert Park Lake', coordinates: { lat: -37.844, lng: 144.970 }, created_at: minutesAgo(26), poster: { id: 'person-8', username: 'BlueHour118', verification_status: 'not_verified' }, watcher_count: 4, confirmed_by_me: false, photo_url: null, note: 'A remarkable blue-hour reflection on the lake.' },
 ];
 
+function localTimestamp(day: number, hour: number, minute: number): string {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), day, hour, minute).toISOString();
+}
+
 const initialMoments: SkyMoment[] = [
-  { id: 'moment-1', category: 'sunset', occurred_at: '2026-10-05T18:42:00+11:00', location_label: 'St Kilda Beach', direction: 'west', landmark: 'The pier', notes: 'The water caught every shade of apricot.', photo_urls: [skyImage('#f6a36f', '#5659a9', '#fff0c8'), skyImage('#f3b57d', '#243c75', '#ffe7be')] },
-  { id: 'moment-2', category: 'rainbow', occurred_at: '2026-10-03T16:14:00+11:00', location_label: 'Carlton', direction: 'east', landmark: 'Royal Exhibition Building', notes: 'It appeared between two quick showers.', photo_urls: [skyImage('#91cce8', '#e6a7b1', '#ffffff')] },
-  { id: 'moment-3', category: 'clouds', occurred_at: '2026-09-29T17:31:00+10:00', location_label: 'Fitzroy', direction: 'above', landmark: null, notes: 'Mammatus clouds, just for a few minutes.', photo_urls: [] },
-  { id: 'moment-4', category: 'moon', occurred_at: '2026-09-26T19:04:00+10:00', location_label: 'Southbank', direction: 'above', landmark: 'Yarra River', notes: 'A bright moon over the water.', photo_urls: [skyImage('#15274d', '#5e75ac', '#fff4c9')] },
-  { id: 'moment-5', category: 'sunrise', occurred_at: '2026-09-20T06:38:00+10:00', location_label: 'Elwood', direction: 'east', landmark: 'Elwood Beach', notes: 'Worth the early alarm.', photo_urls: [skyImage('#4b78b7', '#f4a369', '#ffe8b6'), skyImage('#557eba', '#ed9077', '#fff0c6'), skyImage('#365e9c', '#d86f72', '#fff3d0')] },
-  { id: 'moment-6', category: 'other', occurred_at: '2026-09-14T18:02:00+10:00', location_label: 'Melbourne CBD', direction: 'north', landmark: 'Flinders Street Station', notes: 'The last light reflected in the windows.', photo_urls: [] },
-  { id: 'moment-7', category: 'sunset', occurred_at: '2026-09-11T18:20:00+10:00', location_label: 'Williamstown', direction: 'west', landmark: 'Gem Pier', notes: 'A slow, quiet fade after the wind dropped.', photo_urls: [skyImage('#feaa70', '#694e9e', '#ffe6a8'), skyImage('#f49778', '#2c5187', '#fce7bd'), skyImage('#f8bb82', '#5464ae', '#ffe9cb'), skyImage('#ef8f72', '#395080', '#fff2c9')] },
+  { id: 'moment-1', category: 'moon', occurred_at: localTimestamp(6, 21, 10), location_label: 'Williamstown Beach', direction: 'east', landmark: 'Gem Pier', notes: 'The moon was bright above the water.', photo_urls: [] },
+  { id: 'moment-2', category: 'sunset', occurred_at: localTimestamp(5, 18, 42), location_label: 'St Kilda Beach', direction: 'west', landmark: 'The pier', notes: 'The water caught every shade of apricot.', photo_urls: [demoSkyImage('sunset', 1), demoSkyImage('sunset', 2)] },
+  { id: 'moment-3', category: 'rainbow', occurred_at: localTimestamp(5, 16, 14), location_label: 'Carlton', direction: 'east', landmark: 'Royal Exhibition Building', notes: 'It appeared between two quick showers.', photo_urls: [demoSkyImage('rainbow', 1)] },
+  { id: 'moment-4', category: 'clouds', occurred_at: localTimestamp(3, 17, 31), location_label: 'Fitzroy', direction: 'above', landmark: null, notes: 'Mammatus clouds, just for a few minutes.', photo_urls: [demoSkyImage('clouds', 1), demoSkyImage('clouds', 2), demoSkyImage('clouds', 3)] },
+  { id: 'moment-5', category: 'sunrise', occurred_at: localTimestamp(2, 6, 38), location_label: 'Elwood', direction: 'east', landmark: 'Elwood Beach', notes: 'Worth the early alarm.', photo_urls: [demoSkyImage('sunrise', 1), demoSkyImage('sunrise', 2), demoSkyImage('sunrise', 3), demoSkyImage('sunrise', 4), demoSkyImage('sunrise', 5)] },
 ];
 
 const copyUser = (user: SkyUser): SkyUser => ({ ...user });
@@ -121,7 +126,18 @@ export class MockSkyNudgeApi implements SkyNudgeApi {
     this.notify();
   }
 
-  async listMyMoments(): Promise<SkyMoment[]> { return [...this.moments].sort((a, b) => Date.parse(b.occurred_at) - Date.parse(a.occurred_at)).map(copyMoment); }
+  async listMyMoments(): Promise<SkyMoment[]> { return this.getMyMoments(); }
+
+  async getMyMoments(): Promise<SkyMoment[]> { return [...this.moments].sort((a, b) => Date.parse(b.occurred_at) - Date.parse(a.occurred_at)).map(copyMoment); }
+
+  async getMomentPhotosForMonth(year: number, month: number): Promise<Record<string, string[]>> {
+    const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+    return this.moments.filter((moment) => localDateKey(moment.occurred_at).startsWith(prefix)).sort((a, b) => Date.parse(a.occurred_at) - Date.parse(b.occurred_at)).reduce<Record<string, string[]>>((days, moment) => {
+      const date = localDateKey(moment.occurred_at);
+      days[date] = [...(days[date] ?? []), ...(moment.photo_urls.length > 0 ? moment.photo_urls : [demoSkyImage(moment.category)])];
+      return days;
+    }, {});
+  }
 
   async saveMoment(input: SaveMomentInput): Promise<SkyMoment> {
     const nudge = this.nudges.find((candidate) => candidate.id === input.nudge_id);

@@ -45,8 +45,55 @@
 
 .map-placeholder { padding: var(--space-5); color: var(--color-text-secondary); background: var(--color-very-light-blue); border: 1px solid var(--color-border); border-radius: var(--radius-large); }.map-placeholder strong { color: var(--color-text-primary); }.map-placeholder p { line-height: 1.5; }.map-placeholder button { min-height: var(--tap-target); color: var(--color-primary); background: transparent; border: 0; font-weight: 700; }
 .nudge-row { display: flex; align-items: center; width: 100%; min-height: 68px; gap: var(--space-3); padding: var(--space-3) 0; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--color-border); }.nudge-row__content { display: grid; gap: var(--space-1); }.nudge-row__content strong { text-transform: capitalize; }.nudge-row__content small { color: var(--color-text-secondary); }
-.moment-entry { display: grid; grid-template-columns: 112px 1fr; gap: var(--space-3); padding: var(--space-4) 0; border-bottom: 1px solid var(--color-border); }.moment-entry__photo { display: grid; min-height: 112px; place-items: center; overflow: hidden; color: var(--color-primary); background: var(--color-pale-blue); border-radius: var(--radius-medium); }.moment-entry__photo img { width: 100%; height: 100%; object-fit: cover; }.moment-entry__content strong { text-transform: capitalize; }.moment-entry__content p { display: flex; align-items: center; gap: var(--space-1); margin: var(--space-1) 0; color: var(--color-text-secondary); font-size: 13px; }.moment-entry__content em { display: block; margin-top: var(--space-2); font-family: var(--font-serif); font-size: 14px; }
-.calendar-grid { display: grid; gap: var(--space-2); }.calendar-grid p { color: var(--color-text-secondary); }.calendar-grid button { min-height: var(--tap-target); color: var(--color-text-primary); text-align: left; background: var(--color-very-light-blue); border: 1px solid var(--color-border); border-radius: var(--radius-small); }
 
 @media (min-width: 500px) { .phone-frame { width: min(var(--phone-width), calc(100vw - 40px)); height: min(var(--phone-height), calc(100dvh - 40px)); min-height: 0; overflow: hidden; border: 1px solid var(--color-border); border-radius: 22px; }.app-shell { min-height: 0; height: 100%; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
+
+.moments-page, .moments-day-page { min-height: 100%; background: var(--color-background); }
+.moments-header__title { padding: 18px var(--space-5) 0; }
+.moments-header__title h1, .moments-day-page__title { margin: 0; font-family: var(--font-serif); font-size: 34px; font-weight: 500; line-height: 1.12; letter-spacing: -.015em; }
+.moments-header__title p { display: flex; align-items: center; gap: 6px; margin: var(--space-2) 0 0; color: var(--color-text-secondary); font-size: 13px; }
+.moments-tabs { display: flex; margin: 18px var(--space-5) 0; border-bottom: 1px solid var(--color-border); }
+.moments-tabs a { flex: 1; min-height: 46px; margin-bottom: -1px; display: grid; place-items: center; color: var(--color-text-secondary); border-bottom: 2px solid transparent; font-size: 15px; font-weight: 600; text-decoration: none; }
+.moments-tabs a[aria-selected="true"] { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+.moments-content { padding: 0 var(--space-5) var(--space-7); }
+.moments-feed { display: grid; }
+.moment-card { padding: var(--space-6) 0; border-bottom: 1px solid var(--color-border); cursor: pointer; }
+.moment-card:last-child { border-bottom: 0; }
+.moment-card__hero { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: var(--color-pale-blue); border-radius: 20px; }
+.moment-card__hero img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.moment-card__demo-pill { position: absolute; bottom: 8px; left: 10px; padding: 3px 7px; color: var(--color-white); background: rgb(17 17 17 / .85); border-radius: var(--radius-pill); font-size: 12px; font-weight: 700; letter-spacing: .08em; }
+.moment-card__strip { display: flex; gap: var(--space-2); margin-top: var(--space-2); overflow-x: auto; }
+.moment-card__strip button { flex: 0 0 105px; width: 105px; height: 70px; padding: 0; overflow: hidden; background: var(--color-pale-blue); border: 2px solid transparent; border-radius: 14px; }
+.moment-card__strip button.is-selected { border-color: var(--color-primary); }
+.moment-card__strip img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.moment-card__meta { display: flex; align-items: center; gap: var(--space-2); margin-top: 14px; }
+.moment-card__category { display: flex; align-items: center; gap: var(--space-2); font-size: 15px; }
+.moment-card__category svg { color: var(--color-primary); }
+.moment-card__meta time { margin-left: auto; color: var(--color-text-secondary); font-size: 13px; font-weight: 500; white-space: nowrap; }
+.moment-card__place { display: flex; align-items: center; gap: 6px; margin: var(--space-2) 0 0; color: var(--color-text-primary); font-size: 16px; font-weight: 500; }
+.moment-card__place svg { color: var(--color-text-secondary); }
+.moment-card__look { margin: 2px 0 0; color: var(--color-text-secondary); font-size: 13px; }
+.moment-card__note { margin: 10px 0 0; line-height: 1.5; }
+.moments-empty { display: grid; justify-items: start; gap: var(--space-4); padding: 48px 0; color: var(--color-text-secondary); }
+.moments-skeleton { display: grid; gap: var(--space-4); padding: var(--space-6) 0; }
+.moments-skeleton i { display: block; height: 170px; background: linear-gradient(90deg, var(--color-very-light-blue), var(--color-pale-blue), var(--color-very-light-blue)); border-radius: 20px; }
+.moments-calendar__head { display: flex; align-items: center; justify-content: space-between; margin: var(--space-5) 0 var(--space-2); }
+.moments-calendar__head h2 { margin: 0; font-family: var(--font-serif); font-size: 19px; font-weight: 500; }
+.moments-icon-button { display: grid; width: 44px; height: 44px; padding: 0; place-items: center; color: var(--color-text-primary); background: transparent; border: 0; border-radius: var(--radius-medium); }
+.moments-icon-button:hover:not(:disabled) { background: var(--color-very-light-blue); }
+.moments-icon-button:disabled { color: var(--color-text-muted); background: transparent; }
+.moments-calendar__grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px 5px; text-align: center; }
+.moments-calendar__weekday { padding: 8px 0 2px; color: var(--color-text-secondary); font-size: 12px; font-weight: 600; }
+.moments-calendar__day { position: relative; display: grid; width: 100%; aspect-ratio: 1; padding: 0; place-items: center; overflow: hidden; color: var(--color-text-primary); border: 0; border-radius: 9px; font-variant-numeric: tabular-nums; }
+.moments-calendar__day--empty { background: var(--color-very-light-blue); font-size: 14px; }
+.moments-calendar__day--has { background: var(--color-pale-blue); }
+.moments-calendar__day--has:hover { filter: brightness(.96); }
+.moments-calendar__day--today { outline: 2px solid var(--color-text-primary); outline-offset: 1px; }
+.moments-calendar__thumbs { position: absolute; inset: 0; display: grid; gap: 1px; background: var(--color-white); }
+.moments-calendar__thumbs i { display: block; background-color: var(--color-pale-blue); background-position: center; background-size: cover; }
+.moments-calendar__thumbs.t1 { grid-template: 1fr / 1fr; }.moments-calendar__thumbs.t2 { grid-template: 1fr / 1fr 1fr; }.moments-calendar__thumbs.t3, .moments-calendar__thumbs.t4 { grid-template: 1fr 1fr / 1fr 1fr; }.moments-calendar__thumbs.t3 i:first-child { grid-row: 1 / 3; }
+.moments-calendar__number { position: absolute; top: 3px; left: 3px; display: grid; min-width: 16px; height: 16px; padding: 0 4px; place-items: center; color: var(--color-white); background: rgb(17 17 17 / .62); border-radius: var(--radius-pill); font-size: 10px; font-weight: 700; line-height: 1; }
+.moments-calendar__legend { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-5) 0 0; color: var(--color-text-secondary); font-size: 13px; }
+.moments-calendar__legend i { width: 14px; height: 14px; flex: 0 0 auto; background: var(--gradient-primary); border-radius: 4px; }
+.moments-day-page__top { padding: 10px 0 0 8px; min-height: 56px; }.moments-day-page__title { font-size: 28px; margin-top: var(--space-2); }.moments-day-page__empty { margin-top: var(--space-5); color: var(--color-text-secondary); }

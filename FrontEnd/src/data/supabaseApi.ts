@@ -2,6 +2,7 @@ import type { User } from '@supabase/supabase-js';
 import type { PostgrestError } from '@supabase/supabase-js';
 import type { SkyNudgeApi } from './api';
 import { getSupabaseClient } from '../lib/supabase';
+import { localDateKey } from '../lib/moments';
 import type {
   Category,
   CreateNudgeInput,
@@ -277,7 +278,7 @@ export class SupabaseSkyNudgeApi implements SkyNudgeApi {
     if (error && error.code !== '23505') throw error;
   }
 
-  async listMyMoments(): Promise<SkyMoment[]> {
+  async getMyMoments(): Promise<SkyMoment[]> {
     const supabase = getSupabaseClient();
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError) throw userError;
@@ -289,6 +290,18 @@ export class SupabaseSkyNudgeApi implements SkyNudgeApi {
       .order('captured_at', { ascending: false });
     if (error) throw error;
     return Promise.all(((data ?? []) as MomentRow[]).map((row) => this.toSkyMoment(row)));
+  }
+
+  async listMyMoments(): Promise<SkyMoment[]> { return this.getMyMoments(); }
+
+  async getMomentPhotosForMonth(year: number, month: number): Promise<Record<string, string[]>> {
+    const moments = await this.getMyMoments();
+    const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+    return moments.filter((moment) => localDateKey(moment.occurred_at).startsWith(prefix)).sort((left, right) => Date.parse(left.occurred_at) - Date.parse(right.occurred_at)).reduce<Record<string, string[]>>((days, moment) => {
+      const date = localDateKey(moment.occurred_at);
+      days[date] = [...(days[date] ?? []), ...moment.photo_urls];
+      return days;
+    }, {});
   }
 
   async saveMoment(input: SaveMomentInput): Promise<SkyMoment> {

@@ -25,6 +25,8 @@ export interface SkyNudgeApi {
   reportNudge(id: string, reason: string): Promise<void>;
   blockUser(userId: string): Promise<void>;
   listMyMoments(): Promise<SkyMoment[]>;
+  getMyMoments(): Promise<SkyMoment[]>;
+  getMomentPhotosForMonth(year: number, month: number): Promise<Record<string, string[]>>;
   saveMoment(input: SaveMomentInput): Promise<SkyMoment>;
   updateMoment(momentId: string, input: UpdateMomentInput): Promise<SkyMoment>;
   deleteMoment(momentId: string): Promise<void>;

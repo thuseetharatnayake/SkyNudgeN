@@ -30,10 +30,11 @@ describe('MockSkyNudgeApi', () => {
   it('updates and deletes private Sky Moments', async () => {
     const api = new MockSkyNudgeApi();
     const [moment] = await api.listMyMoments();
+    const initialMoments = await api.listMyMoments();
 
     await expect(api.updateMoment(moment.id, { notes: 'Updated private note.' })).resolves.toMatchObject({ notes: 'Updated private note.' });
     await api.deleteMoment(moment.id);
 
-    await expect(api.listMyMoments()).resolves.toHaveLength(6);
+    await expect(api.listMyMoments()).resolves.toHaveLength(initialMoments.length - 1);
   });
 });
