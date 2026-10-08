@@ -62,7 +62,7 @@ Open the FastAPI documentation at `http://127.0.0.1:8000/docs`.
 
 ## Vercel deployment
 
-Deploy this monorepo as one Vercel project from the repository root. The root `api/index.py` adds `backend` to Python's module path and imports the FastAPI application from `app.main`. The root `vercel.json` builds the Vite application from `frontend/`, serves its static assets, routes `/health` to FastAPI, and sends other paths to the React application.
+Deploy this monorepo as one Vercel Services project from the repository root. The root `vercel.json` builds `frontend/` as the Vite service and deploys `backend/` as the FastAPI service using `app.main:app`. It routes `/health` to FastAPI and sends other paths to the React application.
 
 Configure `VITE_USE_MOCK`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and `DATABASE_URL` in the Vercel project environment variables.
 
