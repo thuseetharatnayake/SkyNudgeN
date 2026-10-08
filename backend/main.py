@@ -14,7 +14,7 @@ load_dotenv(BASE_DIR / ".env")
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    if os.getenv("RUN_DB_INIT_ON_STARTUP", "true").lower() == "true":
+    if os.getenv("RUN_DB_INIT_ON_STARTUP", "false").lower() == "true":
         initialize_database()
     yield
 

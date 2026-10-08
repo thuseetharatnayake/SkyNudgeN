@@ -12,11 +12,11 @@ This FastAPI project is intentionally limited to database initialization, checks
 
 ## 1. Configure `.env`
 
-Copy the Session pooler URL into `BackEnd/.env` and replace its empty value:
+Copy the Session pooler URL into `backend/.env` and replace its empty value:
 
 ```env
 DATABASE_URL=postgresql://...your-session-pooler-url...?sslmode=require
-RUN_DB_INIT_ON_STARTUP=true
+RUN_DB_INIT_ON_STARTUP=false
 ```
 
 If the password contains special characters, URL-encode it first:
@@ -29,7 +29,7 @@ The password prompt is hidden; only the encoded value is printed.
 
 ## Windows PowerShell
 
-From `C:\Users\thusi\OneDrive\Desktop\La Trobe\La trobe Sem 3\vibe coding\A2\SkyNudgeN\BackEnd`:
+From `C:\Users\thusi\OneDrive\Desktop\La Trobe\La trobe Sem 3\vibe coding\A2\SkyNudgeN\backend`:
 
 ```powershell
 py -3.11 -m venv .venv
@@ -46,7 +46,7 @@ Open the FastAPI documentation at `http://127.0.0.1:8000/docs`.
 
 ## macOS / Linux
 
-From the `BackEnd` directory:
+From the `backend` directory:
 
 ```bash
 python3 -m venv .venv
@@ -59,6 +59,15 @@ uvicorn main:app --reload
 ```
 
 Open the FastAPI documentation at `http://127.0.0.1:8000/docs`.
+
+## Vercel deployment
+
+Deploy the frontend and backend as separate Vercel projects from this repository:
+
+- **Frontend:** use the repository root. The root `vercel.json` installs, builds, and serves the Vite app from `frontend/`, including a rewrite to `index.html` for React Router routes. Configure `VITE_USE_MOCK`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_PUBLISHABLE_KEY` in the Vercel project environment variables.
+- **Backend:** create a separate Vercel project with `backend` as its Root Directory. Vercel detects `main.py`, its top-level `app`, and `requirements.txt` as a FastAPI function. Configure `DATABASE_URL` in that backend project's environment variables.
+
+Keep `RUN_DB_INIT_ON_STARTUP=false` in Vercel. Serverless instances can start more than once, so apply the reviewed schema deliberately with `python database.py` from a trusted local environment rather than during request-serving startup.
 
 ## Expected results
 
