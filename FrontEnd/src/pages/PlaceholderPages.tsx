@@ -12,7 +12,7 @@ import { HomeScreen } from '../components/home/HomeScreen';
 import { useNearbyNudges } from '../hooks/useNearbyNudges';
 import { AccountPage as AccountScreen, SettingsPage as SettingsScreen } from '../components/account/AccountScreens';
 import { RoutePlaceholder } from './RoutePlaceholder';
-import type { Category, Direction, Intensity, RadiusKm, SkyMoment, SkyUser, VerificationStatus } from '../types/sky';
+import type { Category, Direction, Intensity, RadiusKm, SkyMoment, SkyUser } from '../types/sky';
 
 const melbourneFallback = { lat: -37.8136, lng: 144.9631 };
 const categories: Category[] = ['sunset', 'sunrise', 'rainbow', 'clouds', 'moon', 'other'];
@@ -122,15 +122,11 @@ export function VerificationIntroPage(): JSX.Element {
     })();
   }, [api]);
 
-  if (isLoading) return <div className="screen-page"><p className="page-copy">Loading your verification status…</p></div>;
-  if (error) return <div className="screen-page"><p className="auth-error" role="alert">{error}</p></div>;
+  if (isLoading) return <main className="verification-page"><header className="verification-topbar"><button className="verification-back" type="button" aria-label="Back to Account" onClick={() => navigate('/account')}><SkyIcon name="chevron-left" size={25} strokeWidth={2.2} /></button></header><p className="page-copy">Loading your verification status…</p></main>;
+  if (error) return <main className="verification-page"><header className="verification-topbar"><button className="verification-back" type="button" aria-label="Back to Account" onClick={() => navigate('/account')}><SkyIcon name="chevron-left" size={25} strokeWidth={2.2} /></button></header><p className="auth-error" role="alert">{error}</p></main>;
   const status = profile?.verification_status ?? 'not_verified';
-  const statusCopy = verificationStatusCopy(status);
-  return <div className="screen-page screen-page--centered"><div className="page-stack"><div><p className="page-eyebrow">Identity</p><h1 className="page-title">A quieter way to know who is nearby.</h1><p className="page-copy">Verification is optional. Your legal name and phone number are submitted privately and are never shown on SkyNudges.</p></div>
-    <div className="placeholder-note"><strong>{statusCopy.title}</strong><p>{statusCopy.description}</p></div>
-    {status === 'not_verified' || status === 'rejected' ? <button className="sky-button sky-button--primary sky-button--full" type="button" onClick={() => navigate('/verification/form')}>{status === 'rejected' ? 'Submit a new request' : 'Start verification'}</button> : null}
-    <button className="sky-button sky-button--secondary sky-button--full" type="button" onClick={() => navigate('/account')}>Back to account</button>
-  </div></div>;
+  if (status === 'pending' || status === 'verified' || status === 'rejected') return <main className="verification-page"><header className="verification-topbar"><button className="verification-back" type="button" aria-label="Back to Account" onClick={() => navigate('/account')}><SkyIcon name="chevron-left" size={25} strokeWidth={2.2} /></button></header><div className="verification-status"><p className="verification-eyebrow">Optional</p><h1>{status === 'pending' ? 'We are reviewing your details.' : status === 'verified' ? 'You are verified.' : 'We could not verify you this time.'}</h1>{status === 'rejected' ? <button className="verification-primary-button" type="button" onClick={() => navigate('/verification/form')}>Try again</button> : null}</div></main>;
+  return <main className="verification-page"><header className="verification-topbar"><button className="verification-back" type="button" aria-label="Back to Account" onClick={() => navigate('/account')}><SkyIcon name="chevron-left" size={25} strokeWidth={2.2} /></button></header><div className="verification-content"><div><p className="verification-eyebrow">Optional</p><h1>What verification means</h1></div><section className="verification-rows" aria-label="What verification means"><div className="verification-row"><span className="verification-tile"><SkyIcon name="shield" size={22} /></span><div><strong>An identity check</strong><p>We check your full legal name and phone number once to confirm you are a real person.</p></div></div><div className="verification-row"><span className="verification-tile"><SkyIcon name="lock" size={22} /></span><div><strong>Your details stay private</strong><p>Your name and number are never shown to anyone. You keep your anonymous username.</p></div></div><div className="verification-row"><span className="verification-tile"><SkyIcon name="check" size={22} strokeWidth={2.2} /></span><div><strong>A small check beside your name</strong><p>The badge only means the identity check was completed. It does not guarantee anyone&apos;s behaviour or that a SkyNudge is accurate.</p></div></div></section><div className="verification-actions"><button className="verification-primary-button" type="button" onClick={() => navigate('/verification/form')}>Continue</button><button className="verification-text-button" type="button" onClick={() => navigate('/account')}>Not now</button></div></div></main>;
 }
 
 export function VerificationFormPage(): JSX.Element {
@@ -142,10 +138,13 @@ export function VerificationFormPage(): JSX.Element {
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isNameValid = fullLegalName.trim().length > 0;
+  const isPhoneValid = phoneNumber.replace(/\D/g, '').length >= 8;
+  const canSubmit = isNameValid && isPhoneValid && consent && !isSubmitting;
 
   async function submit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    if (!consent) { setError('Consent is required to submit verification.'); return; }
+    if (!canSubmit) return;
     setError('');
     setIsSubmitting(true);
     try {
@@ -159,15 +158,7 @@ export function VerificationFormPage(): JSX.Element {
     }
   }
 
-  return <div className="screen-page"><div className="page-stack"><div><p className="page-eyebrow">Identity</p><h1 className="page-title">Verify your account.</h1><p className="page-copy">Your details are used only for this private verification request.</p></div>
-    <form className="auth-form" onSubmit={submit}>
-      <label className="auth-field"><span>Legal name</span><input autoComplete="name" value={fullLegalName} onChange={(event) => setFullLegalName(event.target.value)} maxLength={200} placeholder="Your full legal name" required /></label>
-      <label className="auth-field"><span>Phone number</span><input type="tel" autoComplete="tel" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} maxLength={50} placeholder="e.g. +61 400 000 000" required /></label>
-      <label className="nudge-checkbox"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /> I consent to SkyNudge using these details to review my verification request.</label>
-      {error ? <p className="auth-error" role="alert">{error}</p> : null}
-      <button className="auth-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Submitting…' : 'Submit verification'}</button>
-    </form>
-  </div></div>;
+  return <main className="verification-page"><header className="verification-topbar"><button className="verification-back" type="button" aria-label="Back to verification information" onClick={() => navigate('/verification')}><SkyIcon name="chevron-left" size={25} strokeWidth={2.2} /></button></header><div className="verification-content verification-content--form"><div><h1>Verify your account</h1><p className="verification-subtitle">This takes a minute. Only our team sees these details.</p></div><form className="verification-form" onSubmit={submit} noValidate><label><span>Full legal name</span><input autoComplete="name" value={fullLegalName} onChange={(event) => setFullLegalName(event.target.value)} maxLength={200} placeholder="As shown on your ID" /></label><label><span>Phone number</span><input type="tel" autoComplete="tel" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} maxLength={50} placeholder="04xx xxx xxx" /></label><label className="verification-consent"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>I agree to SkyNudge checking my name and phone number to confirm my identity. This information is never shown publicly.</span></label>{error ? <p className="auth-error" role="alert">{error}</p> : null}<button className="verification-primary-button" type="submit" disabled={!canSubmit}>{isSubmitting ? 'Submitting…' : 'Submit verification'}</button></form></div></main>;
 }
 export const WelcomePage = (): JSX.Element => <RoutePlaceholder eyebrow="Welcome" title="The sky is waiting." description="Your anonymous account is ready." />;
 export function HomePage(): JSX.Element {
@@ -293,13 +284,4 @@ function getCurrentLocation(): Promise<{ lat: number; lng: number }> {
       { enableHighAccuracy: false, timeout: 8_000, maximumAge: 60_000 },
     );
   });
-}
-
-function verificationStatusCopy(status: VerificationStatus): { title: string; description: string } {
-  switch (status) {
-    case 'pending': return { title: 'Pending review', description: 'Your private verification request has been submitted and is awaiting review.' };
-    case 'verified': return { title: 'Verified', description: 'Your account has completed verification.' };
-    case 'rejected': return { title: 'Not approved', description: 'Your previous request was not approved. You can submit a new request with accurate details.' };
-    default: return { title: 'Not verified', description: 'Verification is optional and helps build trust in the SkyNudge community.' };
-  }
 }
