@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useSkyNudgeApi } from '../app/providers/useSkyNudgeApi';
 import { useAuth } from '../app/providers/useAuth';
@@ -8,6 +8,7 @@ import { MomentsHeader } from '../components/moments/MomentsHeader';
 import { CalendarGrid } from '../components/calendar/CalendarGrid';
 import { SkyIcon } from '../components/ui/SkyIcon';
 import { TopBar } from '../components/layout/TopBar';
+import { useLaunchComplete } from '../components/launch/launchContext';
 import { localDateKey } from '../lib/moments';
 import { HomeScreen } from '../components/home/HomeScreen';
 import { useNearbyNudges } from '../hooks/useNearbyNudges';
@@ -33,8 +34,13 @@ export function LoginPage(): JSX.Element {
   const successMessage = (location.state as { message?: string } | null)?.message;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const emailInput = useRef<HTMLInputElement>(null);
+  const launchComplete = useLaunchComplete();
+
+  useEffect(() => { if (launchComplete) emailInput.current?.focus(); }, [launchComplete]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -51,10 +57,10 @@ export function LoginPage(): JSX.Element {
     }
   }
 
-  return <AuthPage eyebrow="SkyNudge" title="Look up before it is gone." description="Log in to see what is happening in the sky around you." hideBack>
+  return <AuthPage eyebrow="Welcome back" title="Look up before it is gone." description="Log in to see what is happening in the sky around you." hideBack>
     <form className="auth-form" onSubmit={handleSubmit}>
-      <label className="auth-field"><span>Email</span><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" required /></label>
-      <label className="auth-field"><span>Password</span><input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your password" required /></label>
+      <label className="auth-field"><span>Email</span><input ref={emailInput} type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" required /></label>
+      <label className="auth-field"><span>Password</span><span className="auth-password"><input type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your password" required /><button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? 'Hide' : 'Show'}</button></span></label>
       {successMessage ? <p className="auth-message" role="status">{successMessage}</p> : null}
       {error ? <p className="auth-error" role="alert">{error}</p> : null}
       <button className="auth-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Logging in…' : 'Log in'}</button>
@@ -69,6 +75,7 @@ export function CreateAccountPage(): JSX.Element {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,7 +101,7 @@ export function CreateAccountPage(): JSX.Element {
   return <AuthPage eyebrow="Create account" title="A name just for the sky." description="Your SkyNudge username is anonymous and auto-generated." backTo="/login">
     <form className="auth-form" onSubmit={handleSubmit}>
       <label className="auth-field"><span>Email</span><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" required /></label>
-      <label className="auth-field"><span>Password</span><input type="password" autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters" required /></label>
+      <label className="auth-field"><span>Password</span><span className="auth-password"><input type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters" required /><button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? 'Hide' : 'Show'}</button></span></label>
       {error ? <p className="auth-error" role="alert">{error}</p> : null}
       {message ? <p className="auth-message" role="status">{message}</p> : null}
       <button className="auth-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Creating account…' : 'Create account'}</button>
@@ -105,7 +112,7 @@ export function CreateAccountPage(): JSX.Element {
 
 interface AuthPageProps { eyebrow: string; title: string; description: string; children: ReactNode; backTo?: string | -1; hideBack?: boolean; }
 function AuthPage({ eyebrow, title, description, children, backTo, hideBack }: AuthPageProps): JSX.Element {
-  return <div className="auth-page"><TopBar backTo={backTo} hideBack={hideBack} /><div className="screen-page screen-page--centered"><div className="page-stack"><div><p className="page-eyebrow">{eyebrow}</p><h1 className="page-title">{title}</h1><p className="page-copy">{description}</p></div>{children}</div></div></div>;
+  return <div className="auth-page"><TopBar backTo={backTo} hideBack={hideBack} /><main className="auth-page__content"><div className="auth-brand"><span><SkyIcon name="other" size={22} strokeWidth={2} /></span>SkyNudge</div><div className="auth-heading"><p className="page-eyebrow">{eyebrow}</p><h1 className="page-title">{title}</h1><p className="page-copy">{description}</p></div><div className="auth-card">{children}</div></main></div>;
 }
 
 export function VerificationIntroPage(): JSX.Element {
