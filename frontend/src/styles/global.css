@@ -1359,6 +1359,116 @@ a {
     background: var(--color-pale-blue);
 }
 
+.verification-status-page {
+    min-height: 100%;
+    background: var(--color-background);
+}
+
+.verification-status-page__content {
+    display: grid;
+    width: 100%;
+    max-width: var(--phone-width);
+    gap: var(--space-7);
+    margin: 0 auto;
+    padding: 72px var(--space-5) var(--space-7);
+}
+
+.verification-status-page__mark {
+    display: grid;
+    width: var(--welcome-mark-size);
+    height: var(--welcome-mark-size);
+    place-items: center;
+    color: var(--color-primary);
+    background: var(--color-pale-blue);
+    border-radius: 50%;
+}
+
+.verification-status-page__intro {
+    display: grid;
+    gap: var(--space-3);
+}
+
+.verification-status-page__intro .verification-eyebrow {
+    margin: 0;
+}
+
+.verification-status-page__intro h1 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: 34px;
+    font-weight: 500;
+    letter-spacing: -.015em;
+    line-height: 1.12;
+}
+
+.verification-status-page__intro > p:last-child,
+.verification-status-page__loading {
+    max-width: 34ch;
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.verification-status-page__identity {
+    display: flex;
+    gap: var(--space-4);
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+}
+
+.verification-status-page__identity small {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+}
+
+.verification-status-page__identity .account-username {
+    margin: 0;
+    font-size: 16px;
+}
+
+.verification-status-page__note {
+    display: flex;
+    gap: var(--space-2);
+    align-items: flex-start;
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.verification-status-page__note svg {
+    flex: 0 0 auto;
+    margin-top: 1px;
+    color: var(--color-primary);
+}
+
+.verification-status-page__actions {
+    display: grid;
+    gap: 10px;
+}
+
+.verification-secondary-button {
+    width: 100%;
+    min-height: 56px;
+    color: var(--color-text-primary);
+    background: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.verification-secondary-button:hover {
+    background: var(--color-very-light-blue);
+}
+
 .verification-text-button {
     min-height: var(--tap-target);
     color: var(--color-primary);

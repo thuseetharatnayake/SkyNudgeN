@@ -18,6 +18,7 @@ import {
   SettingsPage,
   VerificationFormPage,
   VerificationIntroPage,
+  VerificationStatusPage,
   WelcomePage,
 } from '../pages/PlaceholderPages';
 
@@ -47,6 +48,7 @@ export function AppRoutes(): JSX.Element {
     <Route path="/create-account" element={<PublicOnly><CreateAccountPage /></PublicOnly>} />
     <Route path="/verification" element={<RequireAuth><VerificationIntroPage /></RequireAuth>} />
     <Route path="/verification/form" element={<RequireAuth><VerificationFormPage /></RequireAuth>} />
+    <Route path="/verification/pending" element={<RequireAuth><VerificationStatusPage /></RequireAuth>} />
     <Route path="/welcome" element={<RequireAuth><WelcomePage /></RequireAuth>} />
     <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
     <Route path="/home" element={<RequireAuth><HomePage /></RequireAuth>} />

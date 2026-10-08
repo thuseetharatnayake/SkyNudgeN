@@ -12,10 +12,11 @@ import { useLaunchComplete } from '../components/launch/launchContext';
 import { localDateKey } from '../lib/moments';
 import { HomeScreen } from '../components/home/HomeScreen';
 import { useNearbyNudges } from '../hooks/useNearbyNudges';
-import { AccountPage as AccountScreen, SettingsPage as SettingsScreen } from '../components/account/AccountScreens';
+import { AccountPage as AccountScreen, AnonymousName, SettingsPage as SettingsScreen, VerificationStatusPill } from '../components/account/AccountScreens';
 import { RoutePlaceholder } from './RoutePlaceholder';
 import { SaveNudgeButton } from '../components/moments/SaveNudgeButton';
 import { momentsUpdatedEvent } from '../lib/momentUpdates';
+import { showToast } from '../lib/toast';
 import type { Category, Direction, Intensity, Nudge, RadiusKm, SkyMoment, SkyUser } from '../types/sky';
 
 const melbourneFallback = { lat: -37.8136, lng: 144.9631 };
@@ -151,7 +152,7 @@ export function VerificationIntroPage(): JSX.Element {
   if (isLoading) return <main className="verification-page"><TopBar backTo={backTo} onBack={handleBack} /><p className="page-copy">Loading your verification status…</p></main>;
   if (error) return <main className="verification-page"><TopBar backTo={backTo} onBack={handleBack} /><p className="auth-error" role="alert">{error}</p></main>;
   const status = profile?.verification_status ?? 'not_verified';
-  if (status === 'pending' || status === 'verified' || status === 'rejected') return <main className="verification-page"><TopBar backTo={backTo} onBack={handleBack} /><div className="verification-status"><p className="verification-eyebrow">Optional</p><h1>{status === 'pending' ? 'We are reviewing your details.' : status === 'verified' ? 'You are verified.' : 'We could not verify you this time.'}</h1>{status === 'rejected' ? <button className="verification-primary-button" type="button" onClick={() => navigate('/verification/form')}>Try again</button> : null}</div></main>;
+  if (status === 'pending' || status === 'verified' || status === 'rejected') return <VerificationStatusPage />;
   return <main className="verification-page"><TopBar backTo={backTo} onBack={handleBack} /><div className="verification-content"><div><p className="verification-eyebrow">Optional</p><h1>What verification means</h1></div><section className="verification-rows" aria-label="What verification means"><div className="verification-row"><span className="verification-tile"><SkyIcon name="shield" size={22} /></span><div><strong>An identity check</strong><p>We check your full legal name and phone number once to confirm you are a real person.</p></div></div><div className="verification-row"><span className="verification-tile"><SkyIcon name="lock" size={22} /></span><div><strong>Your details stay private</strong><p>Your name and number are never shown to anyone. You keep your anonymous username.</p></div></div><div className="verification-row"><span className="verification-tile"><SkyIcon name="check" size={22} strokeWidth={2.2} /></span><div><strong>A small check beside your name</strong><p>The badge only means the identity check was completed. It does not guarantee anyone&apos;s behaviour or that a SkyNudge is accurate.</p></div></div></section><div className="verification-actions"><button className="verification-primary-button" type="button" onClick={() => navigate('/verification/form')}>Continue</button><button className="verification-text-button" type="button" onClick={() => navigate(createdFromSignUp ? '/welcome' : '/account', { replace: createdFromSignUp })}>Not now</button></div></div></main>;
 }
 
@@ -176,7 +177,8 @@ export function VerificationFormPage(): JSX.Element {
     try {
       await api.submitVerification({ full_legal_name: fullLegalName.trim(), phone_number: phoneNumber.trim(), consent });
       await refreshAuth();
-      navigate('/verification', { replace: true });
+      showToast('Verification submitted. Status: Pending.');
+      navigate('/verification/pending', { replace: true });
     } catch (caughtError) {
       setError(getErrorMessage(caughtError));
     } finally {
@@ -185,6 +187,37 @@ export function VerificationFormPage(): JSX.Element {
   }
 
   return <main className="verification-page"><TopBar backTo="/verification" /><div className="verification-content verification-content--form"><div><h1>Verify your account</h1><p className="verification-subtitle">This takes a minute. Only our team sees these details.</p></div><form className="verification-form" onSubmit={submit} noValidate><label><span>Full legal name</span><input autoComplete="name" value={fullLegalName} onChange={(event) => setFullLegalName(event.target.value)} maxLength={200} placeholder="As shown on your ID" /></label><label><span>Phone number</span><input type="tel" autoComplete="tel" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} maxLength={50} placeholder="04xx xxx xxx" /></label><label className="verification-consent"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>I agree to SkyNudge checking my name and phone number to confirm my identity. This information is never shown publicly.</span></label>{error ? <p className="auth-error" role="alert">{error}</p> : null}<button className="verification-primary-button" type="submit" disabled={!canSubmit}>{isSubmitting ? 'Submitting…' : 'Submit verification'}</button></form></div></main>;
+}
+
+export function VerificationStatusPage(): JSX.Element {
+  const api = useSkyNudgeApi();
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<SkyUser | null>(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const current = await api.getMyProfile();
+        if (active) setProfile(current);
+      } catch {
+        if (active) setError('Unable to load your verification status. Please try again.');
+      }
+    })();
+    return () => { active = false; };
+  }, [api]);
+
+  if (!profile) return <main className="verification-status-page"><div className="verification-status-page__content">{error ? <p className="auth-error" role="alert">{error}</p> : <p className="verification-status-page__loading">Loading verification status…</p>}</div></main>;
+
+  const status = profile.verification_status;
+  const content = status === 'verified'
+    ? { title: 'Identity check completed.', subtitle: '' }
+    : status === 'rejected'
+      ? { title: 'Not approved.', subtitle: 'You can try again.' }
+      : { title: 'We are reviewing your details.', subtitle: 'This usually takes a little while. You can use SkyNudge in the meantime. We will let you know when your check is complete.' };
+
+  return <main className="verification-status-page"><div className="verification-status-page__content"><span className="verification-status-page__mark"><SkyIcon name="check" size={34} strokeWidth={2.2} /></span><section className="verification-status-page__intro"><p className="verification-eyebrow">Optional</p><h1>{content.title}</h1>{content.subtitle ? <p>{content.subtitle}</p> : null}</section><section className="verification-status-page__identity"><div><small>Others see you as</small><AnonymousName profile={profile} /></div><VerificationStatusPill status={status} /></section><p className="verification-status-page__note"><SkyIcon name="info" size={18} strokeWidth={1.8} /><span>Your real name and phone number stay private.</span></p><div className="verification-status-page__actions"><button className="verification-primary-button" type="button" onClick={() => navigate('/home')}>Go to Home</button>{status === 'rejected' ? <button className="verification-secondary-button" type="button" onClick={() => navigate('/verification/form')}>Try again</button> : null}<button className="verification-secondary-button" type="button" onClick={() => navigate('/account')}>View my account</button></div></div></main>;
 }
 export function WelcomePage(): JSX.Element {
   const api = useSkyNudgeApi();

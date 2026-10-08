@@ -21,10 +21,19 @@ function verificationDetails(status: VerificationStatus): { label: string; subti
   }
 }
 
+export function AnonymousName({ profile }: { profile: Pick<SkyUser, 'username' | 'verification_status'> }): JSX.Element {
+  return <p className="account-username">{profile.username}{profile.verification_status === 'verified' ? <VerifiedBadge /> : null}</p>;
+}
+
+export function VerificationStatusPill({ status }: { status: VerificationStatus }): JSX.Element {
+  const verification = verificationDetails(status);
+  return <span className={`account-status ${verification.className}`}>{verification.label}</span>;
+}
+
 interface AccountContentProps { profile: SkyUser; isSigningOut: boolean; onMoments: () => void; onVerification: () => void; onSettings: () => void; onSignOut: () => void; }
 export function AccountContent({ profile, isSigningOut, onMoments, onVerification, onSettings, onSignOut }: AccountContentProps): JSX.Element {
   const verification = verificationDetails(profile.verification_status);
-  return <main className="account-page"><TopBar backTo="/home" /><h1>Account</h1><section className="account-identity"><span className="account-avatar"><SkyIcon name="other" size={30} strokeWidth={2} /></span><div><p className="account-username">{profile.username}{profile.verification_status === 'verified' ? <VerifiedBadge /> : null}</p><span className={`account-status ${verification.className}`}>{verification.label}</span></div></section>
+  return <main className="account-page"><TopBar backTo="/home" /><h1>Account</h1><section className="account-identity"><span className="account-avatar"><SkyIcon name="other" size={30} strokeWidth={2} /></span><div><AnonymousName profile={profile} /><VerificationStatusPill status={profile.verification_status} /></div></section>
     <section className="account-rows" aria-label="Account options">
       <button type="button" onClick={onMoments}><span className="account-tile"><SkyIcon name="archive" size={22} /></span><span><strong>My Sky Moments</strong><small>Your private archive</small></span><SkyIcon name="chevron-right" size={20} /></button>
       <button type="button" onClick={onVerification}><span className="account-tile"><SkyIcon name="shield" size={22} /></span><span><strong>Verification</strong><small>{verification.subtitle}</small></span><SkyIcon name="chevron-right" size={20} /></button>
@@ -46,7 +55,7 @@ export function AccountPage(): JSX.Element {
     try { await api.signOut(); await refreshAuth(); navigate('/login', { replace: true }); } catch { setError('Unable to log out. Please try again.'); } finally { setIsSigningOut(false); }
   }
   if (!profile) return <main className="account-page"><TopBar backTo="/home" /><h1>Account</h1>{error ? <p className="account-inline-error" role="alert">{error}</p> : <div className="account-skeleton" aria-label="Loading account"><i /><i /><i /></div>}</main>;
-  return <><AccountContent profile={profile} isSigningOut={isSigningOut} onMoments={() => navigate('/moments')} onVerification={() => navigate('/verification')} onSettings={() => navigate('/settings')} onSignOut={() => void signOut()} />{error ? <p className="account-floating-error" role="alert">{error}</p> : null}</>;
+  return <><AccountContent profile={profile} isSigningOut={isSigningOut} onMoments={() => navigate('/moments')} onVerification={() => navigate(profile.verification_status === 'not_verified' ? '/verification' : '/verification/pending')} onSettings={() => navigate('/settings')} onSignOut={() => void signOut()} />{error ? <p className="account-floating-error" role="alert">{error}</p> : null}</>;
 }
 
 interface DeleteAccountSheetProps { onCancel: () => void; onConfirm: () => Promise<void>; }
