@@ -6,9 +6,9 @@ import { LaunchGate } from './LaunchGate';
 
 function Location(): JSX.Element { return <p data-testid="location">{useLocation().pathname}</p>; }
 
-function renderGate({ isAuthenticated = false, isLoading = false, reducedMotion = false }: { isAuthenticated?: boolean; isLoading?: boolean; reducedMotion?: boolean } = {}) {
+function renderGate({ isAuthenticated = false, isLoading = false, reducedMotion = false, initialPath = '/login' }: { isAuthenticated?: boolean; isLoading?: boolean; reducedMotion?: boolean; initialPath?: string } = {}) {
   vi.stubGlobal('matchMedia', vi.fn().mockImplementation(() => ({ matches: reducedMotion })));
-  return render(<MemoryRouter initialEntries={['/login']}><AuthContext.Provider value={{ isAuthenticated, isLoading, refreshAuth: vi.fn().mockResolvedValue(undefined) }}><LaunchGate><Routes><Route path="*" element={<Location />} /></Routes></LaunchGate></AuthContext.Provider></MemoryRouter>);
+  return render(<MemoryRouter initialEntries={[initialPath]}><AuthContext.Provider value={{ isAuthenticated, isLoading, refreshAuth: vi.fn().mockResolvedValue(undefined) }}><LaunchGate><Routes><Route path="*" element={<Location />} /></Routes></LaunchGate></AuthContext.Provider></MemoryRouter>);
 }
 
 async function advance(milliseconds: number): Promise<void> {
@@ -33,6 +33,15 @@ describe('LaunchGate', () => {
     expect(screen.getByTestId('location')).toHaveTextContent('/home');
     await advance(550);
     expect(screen.queryByLabelText('SkyNudge launch screen')).not.toBeInTheDocument();
+  });
+
+  it('returns an authenticated deep-link refresh to home after restoring the session', async () => {
+    vi.useFakeTimers();
+    renderGate({ isAuthenticated: true, initialPath: '/nudge/nudge-123' });
+    await settleLazyScreen();
+    expect(screen.getByTestId('location')).toHaveTextContent('/nudge/nudge-123');
+    await advance(1_900);
+    expect(screen.getByTestId('location')).toHaveTextContent('/home');
   });
 
   it('keeps an unauthenticated start on login and completes after the splash', async () => {
