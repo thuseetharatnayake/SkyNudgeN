@@ -39,7 +39,7 @@ python -m pip install -r requirements.txt
 python test_database_connection.py
 python database.py
 python check_tables.py
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
 
 Open the FastAPI documentation at `http://127.0.0.1:8000/docs`.
@@ -55,17 +55,16 @@ python -m pip install -r requirements.txt
 python test_database_connection.py
 python database.py
 python check_tables.py
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
 
 Open the FastAPI documentation at `http://127.0.0.1:8000/docs`.
 
 ## Vercel deployment
 
-Deploy the frontend and backend as separate Vercel projects from this repository:
+Deploy this monorepo as one Vercel project from the repository root. The root `api/index.py` adds `backend` to Python's module path and imports the FastAPI application from `app.main`. The root `vercel.json` builds the Vite application from `frontend/`, serves its static assets, routes `/health` to FastAPI, and sends other paths to the React application.
 
-- **Frontend:** use the repository root. The root `vercel.json` installs, builds, and serves the Vite app from `frontend/`, including a rewrite to `index.html` for React Router routes. Configure `VITE_USE_MOCK`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_PUBLISHABLE_KEY` in the Vercel project environment variables.
-- **Backend:** create a separate Vercel project with `backend` as its Root Directory. Vercel detects `main.py`, its top-level `app`, and `requirements.txt` as a FastAPI function. Configure `DATABASE_URL` in that backend project's environment variables.
+Configure `VITE_USE_MOCK`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and `DATABASE_URL` in the Vercel project environment variables.
 
 Keep `RUN_DB_INIT_ON_STARTUP=false` in Vercel. Serverless instances can start more than once, so apply the reviewed schema deliberately with `python database.py` from a trusted local environment rather than during request-serving startup.
 
