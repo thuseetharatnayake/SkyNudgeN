@@ -15,6 +15,7 @@ export interface SkyNudgeApi {
   signUp(email: string, password: string): Promise<SkyUser>;
   signIn(email: string, password: string): Promise<SkyUser>;
   signOut(): Promise<void>;
+  deleteMyAccount(): Promise<void>;
   getMyProfile(): Promise<SkyUser | null>;
   updateMySettings(input: UpdateSettingsInput): Promise<SkyUser>;
   submitVerification(submission: VerificationSubmission): Promise<SkyUser>;

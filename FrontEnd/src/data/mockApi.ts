@@ -74,6 +74,13 @@ export class MockSkyNudgeApi implements SkyNudgeApi {
   }
 
   async signOut(): Promise<void> { this.profile = null; }
+  async deleteMyAccount(): Promise<void> {
+    this.profile = null;
+    this.nudges = [];
+    this.moments = [];
+    this.blockedUserIds.clear();
+    this.notify();
+  }
   async getMyProfile(): Promise<SkyUser | null> { return this.profile ? copyUser(this.profile) : null; }
 
   async updateMySettings(input: UpdateSettingsInput): Promise<SkyUser> {

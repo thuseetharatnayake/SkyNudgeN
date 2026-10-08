@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useSkyNudgeApi } from '../app/providers/useSkyNudgeApi';
 import { useAuth } from '../app/providers/useAuth';
 import { ActiveMomentPage as ActiveMomentScreen } from '../components/active-moment/ActiveMomentPage';
@@ -10,8 +10,7 @@ import { SkyIcon } from '../components/ui/SkyIcon';
 import { localDateKey } from '../lib/moments';
 import { HomeScreen } from '../components/home/HomeScreen';
 import { useNearbyNudges } from '../hooks/useNearbyNudges';
-import { Segmented } from '../components/ui/Segmented';
-import { Toggle } from '../components/ui/Toggle';
+import { AccountPage as AccountScreen, SettingsPage as SettingsScreen } from '../components/account/AccountScreens';
 import { RoutePlaceholder } from './RoutePlaceholder';
 import type { Category, Direction, Intensity, RadiusKm, SkyMoment, SkyUser, VerificationStatus } from '../types/sky';
 
@@ -29,6 +28,8 @@ export function LoginPage(): JSX.Element {
   const api = useSkyNudgeApi();
   const { refreshAuth } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const successMessage = (location.state as { message?: string } | null)?.message;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -53,6 +54,7 @@ export function LoginPage(): JSX.Element {
     <form className="auth-form" onSubmit={handleSubmit}>
       <label className="auth-field"><span>Email</span><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" required /></label>
       <label className="auth-field"><span>Password</span><input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your password" required /></label>
+      {successMessage ? <p className="auth-message" role="status">{successMessage}</p> : null}
       {error ? <p className="auth-error" role="alert">{error}</p> : null}
       <button className="auth-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Logging in…' : 'Log in'}</button>
     </form>
@@ -279,97 +281,8 @@ export function SelectedDayPage(): JSX.Element {
 
   return <div className="moments-day-page"><div className="moments-day-page__top"><button type="button" className="moments-icon-button" aria-label="Back to calendar" onClick={() => navigate('/moments/calendar')}><SkyIcon name="chevron-left" size={22} strokeWidth={2} /></button></div><main className="moments-content"><p className="page-eyebrow">Selected day</p><h1 className="moments-day-page__title">{date ? new Intl.DateTimeFormat('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${date}T12:00:00`)) : 'Sky Moments'}</h1>{isLoading ? <MomentsSkeleton /> : null}{error ? <p className="auth-error" role="alert">{error}</p> : null}{!isLoading && !error && dayMoments.length === 0 ? <p className="moments-day-page__empty">No moments saved on this day.</p> : <section className="moments-feed" aria-label="Sky Moments on selected day">{dayMoments.map((moment) => <MomentEntry key={moment.id} moment={moment} />)}</section>}</main></div>;
 }
-export function AccountPage(): JSX.Element {
-  const api = useSkyNudgeApi();
-  const { refreshAuth } = useAuth();
-  const navigate = useNavigate();
-  const [error, setError] = useState('');
-  const [isSigningOut, setIsSigningOut] = useState(false);
-  const [profile, setProfile] = useState<SkyUser | null>(null);
-
-  useEffect(() => {
-    void (async () => {
-      try { setProfile(await api.getMyProfile()); }
-      catch (caughtError) { setError(getErrorMessage(caughtError)); }
-    })();
-  }, [api]);
-
-  async function signOut(): Promise<void> {
-    setError('');
-    setIsSigningOut(true);
-    try {
-      await api.signOut();
-      await refreshAuth();
-      navigate('/login', { replace: true });
-    } catch (caughtError) {
-      setError(getErrorMessage(caughtError));
-    } finally {
-      setIsSigningOut(false);
-    }
-  }
-
-  const status = profile?.verification_status ?? 'not_verified';
-  const statusCopy = verificationStatusCopy(status);
-  return <div className="screen-page screen-page--centered"><div className="page-stack"><div><p className="page-eyebrow">Account</p><h1 className="page-title">Your sky identity.</h1><p className="page-copy">Your anonymous username and verification status are private to your account.</p></div>
-    {profile ? <div className="placeholder-note"><strong>{profile.username}</strong><p><strong>Verification: {statusCopy.title}</strong><br />{statusCopy.description}</p></div> : null}
-    {error ? <p className="auth-error" role="alert">{error}</p> : null}
-    <button className="sky-button sky-button--primary sky-button--full" type="button" onClick={() => navigate('/verification')}>{status === 'not_verified' || status === 'rejected' ? 'Verify account' : 'View verification status'}</button>
-    <button className="sky-button sky-button--secondary sky-button--full" type="button" disabled={isSigningOut} onClick={() => void signOut()}>{isSigningOut ? 'Signing out…' : 'Sign out'}</button>
-  </div></div>;
-}
-export function SettingsPage(): JSX.Element {
-  const api = useSkyNudgeApi();
-  const [profile, setProfile] = useState<SkyUser | null>(null);
-  const [shareExactLocation, setShareExactLocation] = useState(false);
-  const [nearbyAlerts, setNearbyAlerts] = useState(true);
-  const [defaultRadiusKm, setDefaultRadiusKm] = useState<RadiusKm>(5);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    void (async () => {
-      try {
-        const currentProfile = await api.getMyProfile();
-        if (!currentProfile) throw new Error('You must be signed in to view settings.');
-        setProfile(currentProfile);
-        setShareExactLocation(currentProfile.share_exact_location);
-        setNearbyAlerts(currentProfile.nearby_alerts);
-        setDefaultRadiusKm(currentProfile.default_radius_km);
-      } catch (caughtError) {
-        setError(getErrorMessage(caughtError));
-      } finally {
-        setIsLoading(false);
-      }
-    })();
-  }, [api]);
-
-  async function saveSettings(): Promise<void> {
-    setError('');
-    setMessage('');
-    setIsSaving(true);
-    try {
-      setProfile(await api.updateMySettings({ share_exact_location: shareExactLocation, nearby_alerts: nearbyAlerts, default_radius_km: defaultRadiusKm }));
-      setMessage('Your preferences have been saved.');
-    } catch (caughtError) {
-      setError(getErrorMessage(caughtError));
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  if (isLoading) return <div className="screen-page"><p className="page-copy">Loading preferences…</p></div>;
-  return <div className="screen-page"><div className="page-stack"><div><p className="page-eyebrow">Settings</p><h1 className="page-title">Your preferences.</h1><p className="page-copy">Choose safe defaults for new SkyNudges and nearby updates.</p></div>
-    {profile ? <p className="page-copy">Signed in as <strong>{profile.username}</strong>.</p> : null}
-    {error ? <p className="auth-error" role="alert">{error}</p> : null}
-    {message ? <p className="auth-message" role="status">{message}</p> : null}
-    <section className="settings-section" aria-labelledby="settings-privacy"><p className="page-eyebrow" id="settings-privacy">Privacy</p><div className="settings-row"><div><strong>Share exact location by default</strong><p>Off by default. You can still change this for every SkyNudge.</p></div><Toggle checked={shareExactLocation} onChange={setShareExactLocation} label="Share exact location by default" disabled={isSaving} /></div></section>
-    <section className="settings-section" aria-labelledby="settings-alerts"><p className="page-eyebrow" id="settings-alerts">Alerts</p><div className="settings-row"><div><strong>Nearby SkyNudge alerts</strong><p>Receive nearby alert preferences when notifications are available.</p></div><Toggle checked={nearbyAlerts} onChange={setNearbyAlerts} label="Nearby SkyNudge alerts" disabled={isSaving} /></div></section>
-    <section className="settings-section" aria-labelledby="settings-radius"><p className="page-eyebrow" id="settings-radius">New SkyNudge default</p><div className="settings-radius"><strong>Default sharing radius</strong><p>Set the initial audience radius for new SkyNudges.</p><Segmented options={radii.map((value) => ({ value, label: `${value} km` }))} value={defaultRadiusKm} onChange={setDefaultRadiusKm} label="Default sharing radius" /></div></section>
-    <button className="sky-button sky-button--primary sky-button--full" type="button" disabled={isSaving} onClick={() => void saveSettings()}>{isSaving ? 'Saving…' : 'Save preferences'}</button>
-  </div></div>;
-}
+export function AccountPage(): JSX.Element { return <AccountScreen />; }
+export function SettingsPage(): JSX.Element { return <SettingsScreen />; }
 
 function getCurrentLocation(): Promise<{ lat: number; lng: number }> {
   if (!navigator.geolocation) return Promise.resolve(melbourneFallback);

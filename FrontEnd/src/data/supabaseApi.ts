@@ -171,6 +171,26 @@ export class SupabaseSkyNudgeApi implements SkyNudgeApi {
     if (error) throw error;
   }
 
+  async deleteMyAccount(): Promise<void> {
+    const supabase = getSupabaseClient();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    if (!userData.user) throw new Error('You must be signed in to delete your account.');
+
+    await Promise.all(['nudge-photos', 'moment-photos'].map(async (bucket) => {
+      const { data: files, error: listError } = await supabase.storage.from(bucket).list(userData.user!.id);
+      if (listError) throw listError;
+      const paths = (files ?? []).filter((file) => file.name !== '.emptyFolderPlaceholder').map((file) => `${userData.user!.id}/${file.name}`);
+      if (paths.length === 0) return;
+      const { error: removeError } = await supabase.storage.from(bucket).remove(paths);
+      if (removeError) throw removeError;
+    }));
+
+    const { error } = await rpc<void>('delete_my_account', {});
+    if (error) throw error;
+    await supabase.auth.signOut({ scope: 'local' });
+  }
+
   async getMyProfile(): Promise<SkyUser | null> {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase.auth.getUser();

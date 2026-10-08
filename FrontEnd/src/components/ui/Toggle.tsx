@@ -1,2 +1,2 @@
-interface ToggleProps { checked: boolean; onChange: (checked: boolean) => void; label: string; disabled?: boolean; }
-export function Toggle({ checked, onChange, label, disabled = false }: ToggleProps): JSX.Element { return <button type="button" role="switch" aria-checked={checked} aria-label={label} disabled={disabled} className={`sky-toggle${checked ? ' sky-toggle--on' : ''}`} onClick={() => onChange(!checked)}><span /></button>; }
+interface ToggleProps { checked: boolean; onChange: (checked: boolean) => void; label: string; labelledBy?: string; disabled?: boolean; }
+export function Toggle({ checked, onChange, label, labelledBy, disabled = false }: ToggleProps): JSX.Element { return <button type="button" role="switch" aria-checked={checked} aria-label={labelledBy ? undefined : label} aria-labelledby={labelledBy} disabled={disabled} className={`sky-toggle${checked ? ' sky-toggle--on' : ''}`} onClick={() => onChange(!checked)}><span /></button>; }

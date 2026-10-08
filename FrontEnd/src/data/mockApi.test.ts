@@ -18,6 +18,16 @@ describe('MockSkyNudgeApi', () => {
     await expect(api.getMyProfile()).resolves.toMatchObject({ share_exact_location: true, nearby_alerts: false, default_radius_km: 10 });
   });
 
+  it('clears mock account state when the account is deleted', async () => {
+    const api = new MockSkyNudgeApi();
+
+    await api.deleteMyAccount();
+
+    await expect(api.getMyProfile()).resolves.toBeNull();
+    await expect(api.listMyMoments()).resolves.toHaveLength(0);
+    await expect(api.getNearbyNudges(-37.8136, 144.9631)).resolves.toHaveLength(0);
+  });
+
   it('hides a blocked poster from nearby results and direct lookups', async () => {
     const api = new MockSkyNudgeApi();
 
