@@ -57,7 +57,7 @@ export function LoginPage(): JSX.Element {
     }
   }
 
-  return <AuthPage eyebrow="Welcome back" title="Look up before it is gone." description="Log in to see what is happening in the sky around you." hideBack>
+  return <AuthPage variant="login" title="Look up before it is gone." description="Someone nearby saw something beautiful. Log in to see what is happening in the sky around you." hideBack footer={<><p className="auth-switch">New here? <Link to="/create-account">Create an account</Link></p><p className="auth-privacy">Your real name never appears publicly.</p></>}>
     <form className="auth-form" onSubmit={handleSubmit}>
       <label className="auth-field"><span>Email</span><input ref={emailInput} type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" required /></label>
       <label className="auth-field"><span>Password</span><span className="auth-password"><input type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your password" required /><button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? 'Hide' : 'Show'}</button></span></label>
@@ -65,7 +65,6 @@ export function LoginPage(): JSX.Element {
       {error ? <p className="auth-error" role="alert">{error}</p> : null}
       <button className="auth-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Logging in…' : 'Log in'}</button>
     </form>
-    <p className="auth-switch">New here? <Link to="/create-account">Create an account</Link></p>
   </AuthPage>;
 }
 
@@ -98,7 +97,7 @@ export function CreateAccountPage(): JSX.Element {
     }
   }
 
-  return <AuthPage eyebrow="Create account" title="A name just for the sky." description="Your SkyNudge username is anonymous and auto-generated." backTo="/login">
+  return <AuthPage variant="create" eyebrow="Create account" title="A name just for the sky." description="Your SkyNudge username is anonymous and auto-generated." backTo="/login" footer={<p className="auth-switch">Already have an account? <Link to="/login">Log in</Link></p>}>
     <form className="auth-form" onSubmit={handleSubmit}>
       <label className="auth-field"><span>Email</span><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" required /></label>
       <label className="auth-field"><span>Password</span><span className="auth-password"><input type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters" required /><button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? 'Hide' : 'Show'}</button></span></label>
@@ -106,13 +105,13 @@ export function CreateAccountPage(): JSX.Element {
       {message ? <p className="auth-message" role="status">{message}</p> : null}
       <button className="auth-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Creating account…' : 'Create account'}</button>
     </form>
-    <p className="auth-switch">Already have an account? <Link to="/login">Log in</Link></p>
   </AuthPage>;
 }
 
-interface AuthPageProps { eyebrow: string; title: string; description: string; children: ReactNode; backTo?: string | -1; hideBack?: boolean; }
-function AuthPage({ eyebrow, title, description, children, backTo, hideBack }: AuthPageProps): JSX.Element {
-  return <div className="auth-page"><TopBar backTo={backTo} hideBack={hideBack} /><main className="auth-page__content"><div className="auth-brand"><span><SkyIcon name="other" size={22} strokeWidth={2} /></span>SkyNudge</div><div className="auth-heading"><p className="page-eyebrow">{eyebrow}</p><h1 className="page-title">{title}</h1><p className="page-copy">{description}</p></div><div className="auth-card">{children}</div></main></div>;
+interface AuthPageProps { variant: 'login' | 'create'; eyebrow?: string; title: string; description: string; children: ReactNode; footer?: ReactNode; backTo?: string | -1; hideBack?: boolean; }
+function AuthPage({ variant, eyebrow, title, description, children, footer, backTo, hideBack }: AuthPageProps): JSX.Element {
+  const isLogin = variant === 'login';
+  return <div className={`auth-page auth-page--${variant}`}>{isLogin ? <><svg className="auth-cloud auth-cloud--one" viewBox="0 0 180 62" aria-hidden="true"><path d="M12 50h150c12 0 18-7 18-16 0-10-8-18-18-18-3 0-6 1-9 2C147 8 137 2 125 2c-15 0-27 10-30 24-5-4-11-6-18-6-14 0-25 10-27 23h-2c-10 0-18 6-18 14 0 8 7 13 18 13Z" /></svg><svg className="auth-cloud auth-cloud--two" viewBox="0 0 180 62" aria-hidden="true"><path d="M12 50h150c12 0 18-7 18-16 0-10-8-18-18-18-3 0-6 1-9 2C147 8 137 2 125 2c-15 0-27 10-30 24-5-4-11-6-18-6-14 0-25 10-27 23h-2c-10 0-18 6-18 14 0 8 7 13 18 13Z" /></svg></> : null}{hideBack ? null : <TopBar backTo={backTo} />}<main className="auth-page__content"><div className={`auth-lockup${isLogin ? ' rise rise--one' : ''}`}><span className="auth-lockup__mark"><SkyIcon name="other" size={49} strokeWidth={1.65} /></span><span>SkyNudge</span></div><div className={`auth-heading${isLogin ? ' rise rise--two' : ''}`}>{eyebrow ? <p className="page-eyebrow">{eyebrow}</p> : null}<h1 className="page-title">{title}</h1><p className="page-copy">{description}</p></div><div className={`auth-card${isLogin ? ' rise rise--three' : ''}`}>{children}</div>{footer ? <div className={`auth-footer${isLogin ? ' rise rise--four' : ''}`}>{footer}</div> : null}</main></div>;
 }
 
 export function VerificationIntroPage(): JSX.Element {
