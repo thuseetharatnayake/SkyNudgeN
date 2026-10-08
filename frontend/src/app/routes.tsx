@@ -33,8 +33,10 @@ function RequireAuth({ children }: RouteGuardProps): JSX.Element {
 }
 function PublicOnly({ children }: RouteGuardProps): JSX.Element {
   const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+  const isCreateFlowReturn = location.pathname === '/create-account' && (location.state as { flow?: string } | null)?.flow === 'create-return';
   if (isLoading) return <RouteLoading />;
-  return isAuthenticated ? <Navigate to="/home" replace /> : <>{children}</>;
+  return isAuthenticated && !isCreateFlowReturn ? <Navigate to="/home" replace /> : <>{children}</>;
 }
 
 export function AppRoutes(): JSX.Element {

@@ -1,6 +1,6 @@
 import type { Category } from '../../types/sky';
 
-type IconName = Category | 'home' | 'archive' | 'account' | 'arrow' | 'check' | 'lock' | 'shield' | 'location' | 'clock' | 'camera' | 'chevron-left' | 'chevron-right' | 'more' | 'settings' | 'logout';
+type IconName = Category | 'home' | 'archive' | 'account' | 'arrow' | 'check' | 'lock' | 'shield' | 'location' | 'clock' | 'camera' | 'chevron-left' | 'chevron-right' | 'more' | 'settings' | 'logout' | 'info';
 
 interface SkyIconProps { name: IconName; size?: number; strokeWidth?: number; title?: string; }
 
@@ -29,6 +29,7 @@ export function SkyIcon({ name, size = 24, strokeWidth = 1.8, title }: SkyIconPr
     case 'more': paths = <><circle cx="5" cy="12" r="1.3" fill="currentColor" /><circle cx="12" cy="12" r="1.3" fill="currentColor" /><circle cx="19" cy="12" r="1.3" fill="currentColor" /></>; break;
     case 'settings': paths = <><circle {...shared} cx="12" cy="12" r="3" /><path {...shared} d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.2 2.2-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-3.2v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-2.2-2.2.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H5v-3.2h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 2.2-2.2.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V3.4h3.2v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 2.2 2.2-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2V14h-.2a1.7 1.7 0 0 0-1.6 1Z" /></>; break;
     case 'logout': paths = <><path {...shared} d="M10 5H5v14h5" /><path {...shared} d="M14 8l4 4-4 4M18 12H9" /></>; break;
+    case 'info': paths = <><circle {...shared} cx="12" cy="12" r="8.5" /><path {...shared} d="M12 10v5" /><path {...shared} d="M12 7.2h.01" /></>; break;
   }
   return <svg aria-hidden={title ? undefined : true} aria-label={title} width={size} height={size} viewBox="0 0 24 24" focusable="false">{title ? <title>{title}</title> : null}{paths}</svg>;
 }

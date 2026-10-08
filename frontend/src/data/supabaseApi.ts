@@ -1,6 +1,6 @@
 import type { User } from '@supabase/supabase-js';
 import type { PostgrestError } from '@supabase/supabase-js';
-import type { SkyNudgeApi } from './api';
+import type { SignUpResult, SkyNudgeApi } from './api';
 import { getSupabaseClient } from '../lib/supabase';
 import { localDateKey } from '../lib/moments';
 import type {
@@ -143,17 +143,15 @@ function rpc<T>(functionName: string, arguments_: Record<string, unknown>): Prom
 }
 
 export class SupabaseSkyNudgeApi implements SkyNudgeApi {
-  async signUp(email: string, password: string): Promise<SkyUser> {
+  async signUp(email: string, password: string): Promise<SignUpResult> {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
     if (!data.user) throw new Error('Account creation did not return a user. Please try again.');
 
-    if (!data.session) {
-      throw new Error('Check your email to confirm your account, then log in.');
-    }
+    if (!data.session) return { status: 'confirmation_required' };
 
-    return this.getProfileForUser(data.user);
+    return { status: 'session', user: await this.getProfileForUser(data.user) };
   }
 
   async signIn(email: string, password: string): Promise<SkyUser> {

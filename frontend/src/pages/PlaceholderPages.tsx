@@ -77,37 +77,50 @@ export function CreateAccountPage(): JSX.Element {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [submissionError, setSubmissionError] = useState('');
+  const [submittedAction, setSubmittedAction] = useState<'verify' | 'general' | null>(null);
+  const [confirmationRequired, setConfirmationRequired] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-    setError('');
-    setMessage('');
-    setIsSubmitting(true);
+  function validate(): boolean {
+    const nextEmailError = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ? '' : 'Enter a valid email address.';
+    const nextPasswordError = password.length >= 8 ? '' : 'Use at least 8 characters.';
+    setEmailError(nextEmailError);
+    setPasswordError(nextPasswordError);
+    return !nextEmailError && !nextPasswordError;
+  }
+
+  function friendlySignUpError(error: unknown): string {
+    const message = error instanceof Error ? error.message.toLowerCase() : '';
+    if (message.includes('already') || message.includes('registered') || message.includes('exists')) return 'An account already exists for this email. Try logging in instead.';
+    if (message.includes('network') || message.includes('fetch') || message.includes('connection')) return 'We could not reach SkyNudge. Check your connection and try again.';
+    return 'We could not create your account just now. Please try again.';
+  }
+
+  async function submit(action: 'verify' | 'general'): Promise<void> {
+    if (submittedAction || !validate()) return;
+    setSubmissionError('');
+    setSubmittedAction(action);
     try {
-      await api.signUp(email, password);
+      const result = await api.signUp(email.trim(), password);
+      if (result.status === 'confirmation_required') {
+        setConfirmationRequired(true);
+        return;
+      }
       await refreshAuth();
-      navigate('/welcome', { replace: true });
+      if (action === 'verify') navigate('/verification', { state: { flow: 'create' } });
+      else navigate('/welcome', { replace: true });
     } catch (caughtError) {
-      const nextMessage = getErrorMessage(caughtError);
-      if (nextMessage.startsWith('Check your email')) setMessage(nextMessage);
-      else setError(nextMessage);
+      setSubmissionError(friendlySignUpError(caughtError));
     } finally {
-      setIsSubmitting(false);
+      setSubmittedAction(null);
     }
   }
 
-  return <AuthPage variant="create" eyebrow="Create account" title="A name just for the sky." description="Your SkyNudge username is anonymous and auto-generated." backTo="/login" footer={<p className="auth-switch">Already have an account? <Link to="/login">Log in</Link></p>}>
-    <form className="auth-form" onSubmit={handleSubmit}>
-      <label className="auth-field"><span>Email</span><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" required /></label>
-      <label className="auth-field"><span>Password</span><span className="auth-password"><input type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters" required /><button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? 'Hide' : 'Show'}</button></span></label>
-      {error ? <p className="auth-error" role="alert">{error}</p> : null}
-      {message ? <p className="auth-message" role="status">{message}</p> : null}
-      <button className="auth-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Creating account…' : 'Create account'}</button>
-    </form>
-  </AuthPage>;
+  if (confirmationRequired) return <main className="create-account-page"><TopBar backTo="/login" /><div className="create-account-page__content create-account-page__confirmation"><div><h1>Check your email to confirm your account, then log in.</h1><p>We sent a confirmation link to your email address.</p></div><button className="create-account-button create-account-button--primary" type="button" onClick={() => navigate('/login', { replace: true })}>Back to log in</button></div></main>;
+
+  return <main className="create-account-page"><TopBar backTo="/login" /><div className="create-account-page__content"><div className="create-account-page__intro"><h1>Create your account</h1><p>You will get an anonymous name. Nobody sees your real one.</p></div><form className="create-account-form" noValidate onSubmit={(event) => event.preventDefault()}><label className="create-account-field"><span>Email</span><input type="email" autoComplete="email" value={email} onChange={(event) => { setEmail(event.target.value); if (emailError) setEmailError(''); }} placeholder="you@example.com" aria-invalid={Boolean(emailError)} aria-describedby={emailError ? 'create-email-error' : undefined} />{emailError ? <small id="create-email-error" role="alert">{emailError}</small> : null}</label><label className="create-account-field"><span>Password</span><span className="create-account-password"><input type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={password} onChange={(event) => { setPassword(event.target.value); if (passwordError) setPasswordError(''); }} placeholder="At least 8 characters" aria-invalid={Boolean(passwordError)} aria-describedby={passwordError ? 'create-password-error' : undefined} /><button type="button" onClick={() => setShowPassword((visible) => !visible)}>{showPassword ? 'Hide' : 'Show'}</button></span>{passwordError ? <small id="create-password-error" role="alert">{passwordError}</small> : null}</label></form>{submissionError ? <p className="create-account-error" role="alert">{submissionError}</p> : null}<hr className="create-account-divider" /><section className="create-account-options" aria-label="Account options"><h2>How would you like to continue?</h2><button className="create-account-button create-account-button--primary" type="button" onClick={() => void submit('verify')} disabled={submittedAction !== null}>{submittedAction === 'verify' ? 'Verifying account…' : 'Verify my account'}</button><button className="create-account-button create-account-button--outline" type="button" onClick={() => void submit('general')} disabled={submittedAction !== null}>{submittedAction === 'general' ? 'Creating account…' : 'Continue with a general account'}</button><p>Verification is optional. You can do it later from your account.</p></section></div></main>;
 }
 
 interface AuthPageProps { variant: 'login' | 'create'; eyebrow?: string; title: string; description: string; children: ReactNode; footer?: ReactNode; backTo?: string | -1; hideBack?: boolean; }
@@ -119,6 +132,10 @@ function AuthPage({ variant, eyebrow, title, description, children, footer, back
 export function VerificationIntroPage(): JSX.Element {
   const api = useSkyNudgeApi();
   const navigate = useNavigate();
+  const location = useLocation();
+  const createdFromSignUp = (location.state as { flow?: string } | null)?.flow === 'create';
+  const backTo = createdFromSignUp ? '/create-account' : '/account';
+  const handleBack = createdFromSignUp ? () => navigate('/create-account', { state: { flow: 'create-return' } }) : undefined;
   const [profile, setProfile] = useState<SkyUser | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -131,11 +148,11 @@ export function VerificationIntroPage(): JSX.Element {
     })();
   }, [api]);
 
-  if (isLoading) return <main className="verification-page"><TopBar backTo="/account" /><p className="page-copy">Loading your verification status…</p></main>;
-  if (error) return <main className="verification-page"><TopBar backTo="/account" /><p className="auth-error" role="alert">{error}</p></main>;
+  if (isLoading) return <main className="verification-page"><TopBar backTo={backTo} onBack={handleBack} /><p className="page-copy">Loading your verification status…</p></main>;
+  if (error) return <main className="verification-page"><TopBar backTo={backTo} onBack={handleBack} /><p className="auth-error" role="alert">{error}</p></main>;
   const status = profile?.verification_status ?? 'not_verified';
-  if (status === 'pending' || status === 'verified' || status === 'rejected') return <main className="verification-page"><TopBar backTo="/account" /><div className="verification-status"><p className="verification-eyebrow">Optional</p><h1>{status === 'pending' ? 'We are reviewing your details.' : status === 'verified' ? 'You are verified.' : 'We could not verify you this time.'}</h1>{status === 'rejected' ? <button className="verification-primary-button" type="button" onClick={() => navigate('/verification/form')}>Try again</button> : null}</div></main>;
-  return <main className="verification-page"><TopBar backTo="/account" /><div className="verification-content"><div><p className="verification-eyebrow">Optional</p><h1>What verification means</h1></div><section className="verification-rows" aria-label="What verification means"><div className="verification-row"><span className="verification-tile"><SkyIcon name="shield" size={22} /></span><div><strong>An identity check</strong><p>We check your full legal name and phone number once to confirm you are a real person.</p></div></div><div className="verification-row"><span className="verification-tile"><SkyIcon name="lock" size={22} /></span><div><strong>Your details stay private</strong><p>Your name and number are never shown to anyone. You keep your anonymous username.</p></div></div><div className="verification-row"><span className="verification-tile"><SkyIcon name="check" size={22} strokeWidth={2.2} /></span><div><strong>A small check beside your name</strong><p>The badge only means the identity check was completed. It does not guarantee anyone&apos;s behaviour or that a SkyNudge is accurate.</p></div></div></section><div className="verification-actions"><button className="verification-primary-button" type="button" onClick={() => navigate('/verification/form')}>Continue</button><button className="verification-text-button" type="button" onClick={() => navigate('/account')}>Not now</button></div></div></main>;
+  if (status === 'pending' || status === 'verified' || status === 'rejected') return <main className="verification-page"><TopBar backTo={backTo} onBack={handleBack} /><div className="verification-status"><p className="verification-eyebrow">Optional</p><h1>{status === 'pending' ? 'We are reviewing your details.' : status === 'verified' ? 'You are verified.' : 'We could not verify you this time.'}</h1>{status === 'rejected' ? <button className="verification-primary-button" type="button" onClick={() => navigate('/verification/form')}>Try again</button> : null}</div></main>;
+  return <main className="verification-page"><TopBar backTo={backTo} onBack={handleBack} /><div className="verification-content"><div><p className="verification-eyebrow">Optional</p><h1>What verification means</h1></div><section className="verification-rows" aria-label="What verification means"><div className="verification-row"><span className="verification-tile"><SkyIcon name="shield" size={22} /></span><div><strong>An identity check</strong><p>We check your full legal name and phone number once to confirm you are a real person.</p></div></div><div className="verification-row"><span className="verification-tile"><SkyIcon name="lock" size={22} /></span><div><strong>Your details stay private</strong><p>Your name and number are never shown to anyone. You keep your anonymous username.</p></div></div><div className="verification-row"><span className="verification-tile"><SkyIcon name="check" size={22} strokeWidth={2.2} /></span><div><strong>A small check beside your name</strong><p>The badge only means the identity check was completed. It does not guarantee anyone&apos;s behaviour or that a SkyNudge is accurate.</p></div></div></section><div className="verification-actions"><button className="verification-primary-button" type="button" onClick={() => navigate('/verification/form')}>Continue</button><button className="verification-text-button" type="button" onClick={() => navigate(createdFromSignUp ? '/welcome' : '/account', { replace: createdFromSignUp })}>Not now</button></div></div></main>;
 }
 
 export function VerificationFormPage(): JSX.Element {
@@ -169,7 +186,35 @@ export function VerificationFormPage(): JSX.Element {
 
   return <main className="verification-page"><TopBar backTo="/verification" /><div className="verification-content verification-content--form"><div><h1>Verify your account</h1><p className="verification-subtitle">This takes a minute. Only our team sees these details.</p></div><form className="verification-form" onSubmit={submit} noValidate><label><span>Full legal name</span><input autoComplete="name" value={fullLegalName} onChange={(event) => setFullLegalName(event.target.value)} maxLength={200} placeholder="As shown on your ID" /></label><label><span>Phone number</span><input type="tel" autoComplete="tel" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} maxLength={50} placeholder="04xx xxx xxx" /></label><label className="verification-consent"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>I agree to SkyNudge checking my name and phone number to confirm my identity. This information is never shown publicly.</span></label>{error ? <p className="auth-error" role="alert">{error}</p> : null}<button className="verification-primary-button" type="submit" disabled={!canSubmit}>{isSubmitting ? 'Submitting…' : 'Submit verification'}</button></form></div></main>;
 }
-export const WelcomePage = (): JSX.Element => <RoutePlaceholder eyebrow="Welcome" title="The sky is waiting." description="Your anonymous account is ready." backTo="/home" />;
+export function WelcomePage(): JSX.Element {
+  const api = useSkyNudgeApi();
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<SkyUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    async function loadProfile(): Promise<void> {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          const nextProfile = await api.getMyProfile();
+          if (nextProfile) {
+            if (active) setProfile(nextProfile);
+            break;
+          }
+        } catch {
+          // The profile trigger can complete shortly after authentication; retry calmly.
+        }
+        if (attempt < 2) await new Promise<void>((resolve) => { window.setTimeout(resolve, 500); });
+      }
+      if (active) setIsLoading(false);
+    }
+    void loadProfile();
+    return () => { active = false; };
+  }, [api]);
+
+  return <main className="welcome-page"><div className="welcome-page__content"><span className="welcome-page__mark"><SkyIcon name="other" size={32} strokeWidth={1.8} /></span><div className="welcome-page__intro"><p>Welcome</p>{isLoading ? <span className="welcome-page__name-skeleton" aria-label="Loading your anonymous name" /> : <h1>{profile?.username ?? 'Your account is ready.'}</h1>}<p>That is the name other people see. Your real name stays private.</p></div>{profile?.verification_status === 'pending' ? <p className="welcome-page__note"><SkyIcon name="info" size={18} /><span>Your verification is pending. We will review your details.</span></p> : null}<button className="create-account-button create-account-button--primary" type="button" onClick={() => navigate('/home')}>See the sky near me</button></div></main>;
+}
 export function HomePage(): JSX.Element {
   const navigate = useNavigate();
   const nearby = useNearbyNudges();

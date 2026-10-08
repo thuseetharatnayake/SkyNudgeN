@@ -37,6 +37,11 @@
   --radius-pill: 999px;
   --control-height: 48px;
   --tap-target: 44px;
+  --font-size-create-heading: 28px;
+  --font-size-section-heading: 19px;
+  --icon-welcome-size: 32px;
+  --welcome-mark-size: 72px;
+  --form-control-height: 52px;
   --phone-width: 430px;
   --phone-height: 900px;
   --focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-primary) 26%, transparent);

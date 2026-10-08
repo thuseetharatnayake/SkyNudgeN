@@ -360,6 +360,261 @@ a {
     color: var(--color-primary);
 }
 
+.create-account-page,
+.welcome-page {
+    min-height: 100%;
+    background: var(--color-background);
+}
+
+.create-account-page__content,
+.welcome-page__content {
+    display: grid;
+    width: 100%;
+    max-width: var(--phone-width);
+    gap: var(--space-6);
+    margin: 0 auto;
+    padding: 8px var(--space-5) var(--space-7);
+}
+
+.create-account-page__intro,
+.welcome-page__intro {
+    display: grid;
+    gap: 10px;
+}
+
+.create-account-page__intro h1,
+.create-account-page__confirmation h1 {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-family: var(--font-serif);
+    font-size: var(--font-size-create-heading);
+    font-weight: 500;
+    letter-spacing: -.01em;
+    line-height: 1.15;
+}
+
+.create-account-page__intro p,
+.create-account-page__confirmation p,
+.welcome-page__intro > p:last-child {
+    max-width: 34ch;
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.create-account-form,
+.create-account-options {
+    display: grid;
+    gap: 14px;
+}
+
+.create-account-field {
+    display: grid;
+    gap: 6px;
+    color: var(--color-text-primary);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.create-account-field input {
+    width: 100%;
+    min-height: var(--form-control-height);
+    padding: 0 14px;
+    color: var(--color-text-primary);
+    background: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-medium);
+    font: inherit;
+    font-size: 16px;
+}
+
+.create-account-field input::placeholder {
+    color: var(--color-text-muted);
+}
+
+.create-account-field input:focus-visible,
+.create-account-password button:focus-visible,
+.create-account-button:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.create-account-field input:focus-visible {
+    border-color: var(--color-primary);
+}
+
+.create-account-field small,
+.create-account-error {
+    margin: 0;
+    color: var(--color-danger);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+.create-account-password {
+    position: relative;
+    display: block;
+}
+
+.create-account-password input {
+    padding-right: 68px;
+}
+
+.create-account-password button {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    width: var(--tap-target);
+    height: var(--tap-target);
+    padding: 0;
+    color: var(--color-primary-hover);
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-small);
+    font-size: 13px;
+    font-weight: 700;
+    transform: translateY(-50%);
+}
+
+.create-account-divider {
+    width: 100%;
+    height: 1px;
+    margin: 0;
+    background: var(--color-border);
+    border: 0;
+}
+
+.create-account-options {
+    gap: var(--space-3);
+}
+
+.create-account-options h2 {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-family: var(--font-serif);
+    font-size: var(--font-size-section-heading);
+    font-weight: 500;
+    letter-spacing: -.01em;
+    line-height: 1.2;
+}
+
+.create-account-options > p {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.create-account-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: var(--form-control-height);
+    padding: 0 var(--space-5);
+    border: 1px solid transparent;
+    border-radius: 14px;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.create-account-button--primary {
+    color: var(--color-white);
+    background: var(--color-primary);
+}
+
+.create-account-button--primary:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+}
+
+.create-account-button--outline {
+    color: var(--color-text-primary);
+    background: var(--color-white);
+    border-color: var(--color-border);
+}
+
+.create-account-button--outline:hover:not(:disabled) {
+    background: var(--color-very-light-blue);
+}
+
+.create-account-button:disabled {
+    color: var(--color-text-muted);
+    background: var(--color-pale-blue);
+    cursor: not-allowed;
+}
+
+.create-account-page__confirmation {
+    min-height: calc(100dvh - 56px);
+    align-content: center;
+}
+
+.create-account-page__confirmation > div {
+    display: grid;
+    gap: var(--space-3);
+}
+
+.welcome-page__content {
+    gap: var(--space-7);
+    padding-top: 72px;
+}
+
+.welcome-page__mark {
+    display: grid;
+    width: var(--welcome-mark-size);
+    height: var(--welcome-mark-size);
+    place-items: center;
+    color: var(--color-primary);
+    background: var(--color-pale-blue);
+    border-radius: 50%;
+}
+
+.welcome-page__intro > p:first-child {
+    margin: 0;
+    color: var(--color-primary);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+}
+
+.welcome-page__intro h1 {
+    min-height: 38px;
+    margin: 0;
+    color: var(--color-text-primary);
+    font-family: var(--font-serif);
+    font-size: 34px;
+    font-weight: 500;
+    letter-spacing: -.015em;
+    line-height: 1.12;
+}
+
+.welcome-page__name-skeleton {
+    display: block;
+    width: min(210px, 68%);
+    height: 38px;
+    border-radius: var(--radius-small);
+    background: linear-gradient(90deg, var(--color-very-light-blue), var(--color-pale-blue), var(--color-very-light-blue));
+}
+
+.welcome-page__note {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.welcome-page__note svg {
+    flex: 0 0 auto;
+    margin-top: 1px;
+    color: var(--color-primary);
+}
+
 .auth-cloud {
     position: absolute;
     width: 180px;

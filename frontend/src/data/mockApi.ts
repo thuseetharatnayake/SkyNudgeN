@@ -62,9 +62,9 @@ export class MockSkyNudgeApi implements SkyNudgeApi {
   private subscribers = new Set<(nudges: Nudge[]) => void>();
   private blockedUserIds = new Set<string>();
 
-  async signUp(email: string, _password: string): Promise<SkyUser> {
+  async signUp(email: string, _password: string): Promise<{ status: 'session'; user: SkyUser }> {
     this.profile = { ...copyUser(initialProfile), email, username: 'CloudDrifter482', verification_status: 'not_verified' };
-    return copyUser(this.profile);
+    return { status: 'session', user: copyUser(this.profile) };
   }
 
   async signIn(_email: string, _password: string): Promise<SkyUser> {

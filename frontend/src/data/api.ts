@@ -10,8 +10,12 @@ import type {
   VerificationSubmission,
 } from '../types/sky';
 
+export type SignUpResult =
+  | { status: 'session'; user: SkyUser }
+  | { status: 'confirmation_required' };
+
 export interface SkyNudgeApi {
-  signUp(email: string, password: string): Promise<SkyUser>;
+  signUp(email: string, password: string): Promise<SignUpResult>;
   signIn(email: string, password: string): Promise<SkyUser>;
   signOut(): Promise<void>;
   deleteMyAccount(): Promise<void>;
