@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { BottomNav } from '../components/layout/BottomNav';
+import { TopBar } from '../components/layout/TopBar';
 import { useAuth } from './providers/useAuth';
 import {
   AccountPage,
@@ -24,6 +25,7 @@ const mainRoutes = ['/', '/home', '/moments', '/moments/calendar', '/moments/day
 
 interface RouteGuardProps { children: ReactNode; }
 function RouteLoading(): JSX.Element { return <div className="screen-page screen-page--centered"><p className="page-copy">Restoring your session…</p></div>; }
+function NotFoundPage(): JSX.Element { return <div className="route-placeholder"><TopBar backTo="/home" /><div className="screen-page screen-page--centered"><div className="page-stack"><div><p className="page-eyebrow">Not found</p><h1 className="page-title">This sky view is unavailable.</h1><p className="page-copy">The page you asked for could not be found.</p></div></div></div></div>; }
 function RequireAuth({ children }: RouteGuardProps): JSX.Element {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <RouteLoading />;
@@ -55,6 +57,6 @@ export function AppRoutes(): JSX.Element {
     <Route path="/moments/day/:date" element={<RequireAuth><SelectedDayPage /></RequireAuth>} />
     <Route path="/account" element={<RequireAuth><AccountPage /></RequireAuth>} />
     <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
-    <Route path="*" element={<Navigate to="/login" replace />} />
+    <Route path="*" element={<RequireAuth><NotFoundPage /></RequireAuth>} />
   </Routes></main>{showBottomNav ? <BottomNav /> : null}</div>;
 }

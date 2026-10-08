@@ -4,6 +4,7 @@ import { useSkyNudgeApi } from '../../app/providers/useSkyNudgeApi';
 import type { Direction, Nudge } from '../../types/sky';
 import { SkyIcon } from '../ui/SkyIcon';
 import { VerifiedBadge } from '../ui/VerifiedBadge';
+import { TopBar } from '../layout/TopBar';
 import { clampMinutes, expiryMinutes, peopleText, progressPercent } from './activeMomentHelpers';
 
 const rotations: Record<Direction, number> = { north: 0, east: 90, south: 180, west: 270, above: 0 };
@@ -49,14 +50,13 @@ type Sheet = 'closed' | 'menu' | 'report' | 'block';
 interface ActiveMomentContentProps {
   nudge: Nudge;
   currentUserId: string | null;
-  onBack: () => void;
   onCreate: () => void;
   onConfirm: (nudge: Nudge) => Promise<void>;
   onReport: (reason: string) => Promise<void>;
   onBlock: () => Promise<void>;
 }
 
-export function ActiveMomentContent({ nudge, currentUserId, onBack, onCreate, onConfirm, onReport, onBlock }: ActiveMomentContentProps): JSX.Element {
+export function ActiveMomentContent({ nudge, currentUserId, onCreate, onConfirm, onReport, onBlock }: ActiveMomentContentProps): JSX.Element {
   const [now, setNow] = useState(Date.now());
   const [imageFailed, setImageFailed] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -91,10 +91,7 @@ export function ActiveMomentContent({ nudge, currentUserId, onBack, onCreate, on
   }
 
   return <div className="active-moment">
-    <header className="active-moment__topbar">
-      <button className="active-moment__icon-button" type="button" onClick={onBack} aria-label="Back to Home"><SkyIcon name="chevron-left" size={26} /></button>
-      <div className="active-moment__topbar-actions"><IntensityPill intensity={nudge.intensity} />{!ownNudge ? <button className="active-moment__icon-button" type="button" onClick={() => setSheet('menu')} aria-label="More SkyNudge actions"><SkyIcon name="more" /></button> : null}</div>
-    </header>
+    <TopBar backTo="/moments" right={<div className="active-moment__topbar-actions"><IntensityPill intensity={nudge.intensity} />{!ownNudge ? <button className="active-moment__icon-button" type="button" onClick={() => setSheet('menu')} aria-label="More SkyNudge actions"><SkyIcon name="more" /></button> : null}</div>} />
     <main className="active-moment__body">
       <section className="active-moment__heading"><h1>{categoryTitle(nudge.category)}</h1><p><span>{userName(nudge)}</span>{isVerified(nudge) ? <VerifiedBadge /> : null}<span> · {relativeTime(nudge.created_at, now)}</span></p></section>
       {nudge.photo_url && !imageFailed ? <section className="active-moment__photo-group"><div className="active-moment__photo" role="img" aria-label={`Photo shared by ${userName(nudge)}`}><img src={nudge.photo_url} alt="" onError={() => setImageFailed(true)} /><span className="active-moment__look-chip"><span className="active-moment__direction-arrow" style={{ transform: `rotate(${rotations[nudge.direction]}deg)` }}><SkyIcon name="arrow" size={18} strokeWidth={2.5} /></span>{lookText(nudge.direction)}</span></div><p className="active-moment__small">{locationCopy(nudge)}</p></section> : <CompassPanel nudge={nudge} />}
@@ -140,8 +137,8 @@ export function ActiveMomentPage(): JSX.Element {
     setNudge({ ...previous, confirmed_by_me: true, i_can_see_it: true, watcher_count: count, seen_count: count });
     try { setNudge(await api.confirmSighting(current.id)); } catch (caughtError) { setNudge(previous); throw caughtError; }
   }, [api]);
-  if (isLoading) return <div className="active-moment active-moment--skeleton" aria-label="Loading SkyNudge"><i /><i /><i /><i /></div>;
-  if (error) return <div className="active-moment__state"><p role="alert">{error}</p><button className="sky-button sky-button--secondary" type="button" onClick={() => void loadNudge()}>Retry</button></div>;
-  if (!nudge) return <div className="active-moment__state"><p>This SkyNudge is no longer active or is unavailable.</p><button className="sky-button sky-button--secondary" type="button" onClick={() => navigate('/home')}>Back to Home</button></div>;
-  return <ActiveMomentContent nudge={nudge} currentUserId={currentUserId} onBack={() => navigate('/home')} onCreate={() => navigate('/nudge/new')} onConfirm={confirm} onReport={(reason) => api.reportNudge(nudge.id, reason)} onBlock={async () => { await api.blockUser(nudge.poster.id); navigate('/home', { replace: true }); }} />;
+  if (isLoading) return <div className="active-moment active-moment--skeleton" aria-label="Loading SkyNudge"><TopBar backTo="/moments" /><i /><i /><i /><i /></div>;
+  if (error) return <div className="active-moment"><TopBar backTo="/moments" /><div className="active-moment__state"><p role="alert">{error}</p><button className="sky-button sky-button--secondary" type="button" onClick={() => void loadNudge()}>Retry</button></div></div>;
+  if (!nudge) return <div className="active-moment"><TopBar backTo="/moments" /><div className="active-moment__state"><p>This SkyNudge is no longer active or is unavailable.</p></div></div>;
+  return <ActiveMomentContent nudge={nudge} currentUserId={currentUserId} onCreate={() => navigate('/nudge/new')} onConfirm={confirm} onReport={(reason) => api.reportNudge(nudge.id, reason)} onBlock={async () => { await api.blockUser(nudge.poster.id); navigate('/home', { replace: true }); }} />;
 }

@@ -8,3 +8,15 @@ Port 5173 is in use, trying another one...
 
   [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5174[22m/[39m
 [2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+[2m12:06:48 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/RoutePlaceholder.tsx[22m
+[2m12:06:48 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles/components.css[22m
+[2m12:06:48 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles/global.css[22m
+[2m12:08:46 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/PlaceholderPages.tsx[22m
+[2m12:10:43 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/PlaceholderPages.tsx[22m
+[2m12:10:43 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/active-moment/ActiveMomentPage.tsx[22m
+[2m12:10:43 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/account/AccountScreens.tsx[22m
+[2m12:10:43 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/app/routes.tsx[22m
+[2m12:13:30 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/TopBar.tsx[22m
+[2m12:13:30 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/PlaceholderPages.tsx[22m
+[2m12:13:30 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles/components.css[22m
+[2m12:13:30 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles/global.css[22m
