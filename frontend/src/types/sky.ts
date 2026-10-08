@@ -70,11 +70,6 @@ export interface SkyMoment {
   photo_urls: string[];
 }
 
-export interface SaveMomentInput {
-  nudge_id: string;
-  notes?: string;
-}
-
 export interface UpdateMomentInput {
   notes: string;
 }

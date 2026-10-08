@@ -3,7 +3,6 @@ import type {
   CreateNudgeInput,
   Nudge,
   NudgeSubscription,
-  SaveMomentInput,
   SkyMoment,
   SkyUser,
   UpdateSettingsInput,
@@ -28,11 +27,11 @@ export interface SkyNudgeApi {
   listMyMoments(): Promise<SkyMoment[]>;
   getMyMoments(): Promise<SkyMoment[]>;
   getMomentPhotosForMonth(year: number, month: number): Promise<Record<string, string[]>>;
-  saveMoment(input: SaveMomentInput): Promise<SkyMoment>;
+  saveNudgeAsMoment(nudgeId: string): Promise<SkyMoment>;
   updateMoment(momentId: string, input: UpdateMomentInput): Promise<SkyMoment>;
   deleteMoment(momentId: string): Promise<void>;
   addMomentPhotos(momentId: string, photos: File[]): Promise<SkyMoment>;
   subscribeToNudges(callback: (nudges: Nudge[]) => void): NudgeSubscription;
 }
 
-export type { Coordinates, CreateNudgeInput, Nudge, SaveMomentInput, SkyMoment, SkyUser, UpdateMomentInput, UpdateSettingsInput };
+export type { Coordinates, CreateNudgeInput, Nudge, SkyMoment, SkyUser, UpdateMomentInput, UpdateSettingsInput };

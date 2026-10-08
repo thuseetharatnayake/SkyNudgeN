@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useSkyNudgeApi } from '../app/providers/useSkyNudgeApi';
 import { useAuth } from '../app/providers/useAuth';
@@ -14,7 +14,9 @@ import { HomeScreen } from '../components/home/HomeScreen';
 import { useNearbyNudges } from '../hooks/useNearbyNudges';
 import { AccountPage as AccountScreen, SettingsPage as SettingsScreen } from '../components/account/AccountScreens';
 import { RoutePlaceholder } from './RoutePlaceholder';
-import type { Category, Direction, Intensity, RadiusKm, SkyMoment, SkyUser } from '../types/sky';
+import { SaveNudgeButton } from '../components/moments/SaveNudgeButton';
+import { momentsUpdatedEvent } from '../lib/momentUpdates';
+import type { Category, Direction, Intensity, Nudge, RadiusKm, SkyMoment, SkyUser } from '../types/sky';
 
 const melbourneFallback = { lat: -37.8136, lng: 144.9631 };
 const categories: Category[] = ['sunset', 'sunrise', 'rainbow', 'clouds', 'moon', 'other'];
@@ -209,7 +211,7 @@ export function NudgeStepOnePage(): JSX.Element {
     try {
       const position = await getCurrentLocation();
       const nudge = await api.createNudge({ category, intensity, direction, radius_km: radiusKm, landmark: landmark.trim() || null, coordinates: position, exact_location_shared: shareExactLocation, photo_file: photoFile });
-      navigate(`/nudge/${nudge.id}`, { replace: true });
+      navigate('/nudge/success', { replace: true, state: { nudge } });
     } catch (caughtError) {
       setError(getErrorMessage(caughtError));
     } finally {
@@ -233,7 +235,15 @@ export function NudgeStepOnePage(): JSX.Element {
   </div></div></div>;
 }
 export const NudgeStepTwoPage = (): JSX.Element => <RoutePlaceholder eyebrow="New SkyNudge · 2 of 2" title="Help people find it." description="Share an approximate direction and location." backTo="/nudge/new" />;
-export const NudgeSuccessPage = (): JSX.Element => <RoutePlaceholder eyebrow="Sent" title="Your SkyNudge is live." description="Now put your phone down and look up." backTo="/home" />;
+export function NudgeSuccessPage(): JSX.Element {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const nudge = (location.state as { nudge?: Nudge } | null)?.nudge;
+
+  if (!nudge) return <RoutePlaceholder eyebrow="Sent" title="Your SkyNudge is live." description="Open your active SkyNudge to save it privately." backTo="/home" />;
+
+  return <div className="nudge-success"><TopBar backTo="/home" /><main className="screen-page"><div className="nudge-success__mark"><SkyIcon name="check" size={34} strokeWidth={2.2} /></div><div className="page-stack"><div><p className="page-eyebrow">Sent</p><h1 className="page-title">Your SkyNudge is live.</h1><p className="page-copy">People within {nudge.radius_km} km can see it for about 30 minutes.</p></div><div className="nudge-success__summary"><SkyIcon name={nudge.category} size={24} /><span><strong>{nudge.category}</strong><small>Look {nudge.direction}{nudge.landmark ? ` · ${nudge.landmark}` : ''}</small></span></div><p className="nudge-success__quote">Now put your phone down and look up.</p><div className="nudge-success__actions"><button className="sky-button sky-button--primary sky-button--full" type="button" onClick={() => navigate('/home')}>Back to Home</button><SaveNudgeButton nudge={nudge} /></div></div></main></div>;
+}
 function MomentsSkeleton(): JSX.Element { return <div className="moments-skeleton" aria-label="Loading Sky Moments"><i /><i /><i /></div>; }
 
 export function MomentsFeedPage(): JSX.Element {
@@ -243,7 +253,8 @@ export function MomentsFeedPage(): JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => { void (async () => { try { setMoments(await api.getMyMoments()); } catch (caughtError) { setError(getErrorMessage(caughtError)); } finally { setIsLoading(false); } })(); }, [api]);
+  const loadMoments = useCallback(async (): Promise<void> => { try { setMoments(await api.getMyMoments()); } catch (caughtError) { setError(getErrorMessage(caughtError)); } finally { setIsLoading(false); } }, [api]);
+  useEffect(() => { void loadMoments(); window.addEventListener(momentsUpdatedEvent, loadMoments); return () => window.removeEventListener(momentsUpdatedEvent, loadMoments); }, [loadMoments]);
 
   return <div className="moments-page"><TopBar backTo="/home" /><MomentsHeader /><main className="moments-content">{isLoading ? <MomentsSkeleton /> : null}{error ? <p className="auth-error" role="alert">{error}</p> : null}{!isLoading && !error && moments.length === 0 ? <section className="moments-empty"><p>Save the sky moments you want to remember.</p><button type="button" className="sky-button sky-button--primary" onClick={() => navigate('/home')}>Nudge the Sky</button></section> : null}<section className="moments-feed" aria-label="My Sky Moments">{moments.map((moment) => <MomentEntry key={moment.id} moment={moment} onOpen={() => navigate(`/moments/day/${localDateKey(moment.occurred_at)}`)} />)}</section></main></div>;
 }
@@ -261,7 +272,8 @@ export function MomentsCalendarPage(): JSX.Element {
   const month = viewDate.getMonth();
   const atCurrentMonth = year === currentDate.getFullYear() && month === currentDate.getMonth();
 
-  useEffect(() => { void (async () => { setIsLoading(true); setError(''); try { const [nextMoments, nextPhotos] = await Promise.all([api.getMyMoments(), api.getMomentPhotosForMonth(year, month)]); setMoments(nextMoments); setPhotosByDay(nextPhotos); } catch (caughtError) { setError(getErrorMessage(caughtError)); } finally { setIsLoading(false); } })(); }, [api, month, year]);
+  const loadMoments = useCallback(async (): Promise<void> => { setIsLoading(true); setError(''); try { const [nextMoments, nextPhotos] = await Promise.all([api.getMyMoments(), api.getMomentPhotosForMonth(year, month)]); setMoments(nextMoments); setPhotosByDay(nextPhotos); } catch (caughtError) { setError(getErrorMessage(caughtError)); } finally { setIsLoading(false); } }, [api, month, year]);
+  useEffect(() => { void loadMoments(); window.addEventListener(momentsUpdatedEvent, loadMoments); return () => window.removeEventListener(momentsUpdatedEvent, loadMoments); }, [loadMoments]);
 
   return <div className="moments-page"><TopBar backTo="/home" /><MomentsHeader /><main className="moments-content"><div className="moments-calendar__head"><button type="button" aria-label="Previous month" className="moments-icon-button" onClick={() => setViewDate((date) => new Date(date.getFullYear(), date.getMonth() - 1, 1))}><SkyIcon name="chevron-left" size={22} strokeWidth={2} /></button><h2>{new Intl.DateTimeFormat('en-AU', { month: 'long', year: 'numeric' }).format(viewDate)}</h2><button type="button" aria-label="Next month" className="moments-icon-button" disabled={atCurrentMonth} onClick={() => setViewDate((date) => new Date(date.getFullYear(), date.getMonth() + 1, 1))}><SkyIcon name="chevron-right" size={22} strokeWidth={2} /></button></div>{isLoading ? <MomentsSkeleton /> : null}{error ? <p className="auth-error" role="alert">{error}</p> : null}{!isLoading && !error ? <CalendarGrid year={year} month={month} moments={moments} photosByDay={photosByDay} onSelectDay={(date) => navigate(`/moments/day/${date}`)} /> : null}</main></div>;
 }
@@ -274,7 +286,8 @@ export function SelectedDayPage(): JSX.Element {
   const [error, setError] = useState('');
   const dayMoments = moments.filter((moment) => localDateKey(moment.occurred_at) === date);
 
-  useEffect(() => { void (async () => { try { setMoments(await api.getMyMoments()); } catch (caughtError) { setError(getErrorMessage(caughtError)); } finally { setIsLoading(false); } })(); }, [api]);
+  const loadMoments = useCallback(async (): Promise<void> => { try { setMoments(await api.getMyMoments()); } catch (caughtError) { setError(getErrorMessage(caughtError)); } finally { setIsLoading(false); } }, [api]);
+  useEffect(() => { void loadMoments(); window.addEventListener(momentsUpdatedEvent, loadMoments); return () => window.removeEventListener(momentsUpdatedEvent, loadMoments); }, [loadMoments]);
 
   return <div className="moments-day-page"><TopBar backTo="/moments/calendar" /><main className="moments-content"><p className="page-eyebrow">Selected day</p><h1 className="moments-day-page__title">{date ? new Intl.DateTimeFormat('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${date}T12:00:00`)) : 'Sky Moments'}</h1>{isLoading ? <MomentsSkeleton /> : null}{error ? <p className="auth-error" role="alert">{error}</p> : null}{!isLoading && !error && dayMoments.length === 0 ? <p className="moments-day-page__empty">No moments saved on this day.</p> : <section className="moments-feed" aria-label="Sky Moments on selected day">{dayMoments.map((moment) => <MomentEntry key={moment.id} moment={moment} />)}</section>}</main></div>;
 }

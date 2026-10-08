@@ -10,7 +10,6 @@ import type {
   Intensity,
   Nudge,
   RadiusKm,
-  SaveMomentInput,
   SkyMoment,
   SkyUser,
   UpdateSettingsInput,
@@ -335,12 +334,52 @@ export class SupabaseSkyNudgeApi implements SkyNudgeApi {
     }, {});
   }
 
-  async saveMoment(input: SaveMomentInput): Promise<SkyMoment> {
-    const { data, error } = await rpc<string>('save_nudge_as_moment', { p_nudge_id: input.nudge_id });
-    if (error) throw error;
-    const moment = await this.getMoment(data as string);
-    if (!moment) throw new Error('Your Sky Moment was saved but could not be retrieved.');
-    return moment;
+  async saveNudgeAsMoment(nudgeId: string): Promise<SkyMoment> {
+    const supabase = getSupabaseClient();
+    const nudge = await this.getNudge(nudgeId);
+    if (!nudge) throw new Error('This SkyNudge is no longer available.');
+    const expiresAt = nudge.expires_at ? Date.parse(nudge.expires_at) : Date.parse(nudge.created_at) + 30 * 60_000;
+    if (expiresAt <= Date.now()) throw new Error("This SkyNudge has ended, so it can't be saved.");
+
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
+      if (import.meta.env.DEV && userError) console.error('save_nudge_as_moment:', userError.code, userError.message);
+      throw userError ?? new Error('You must be signed in to save a Sky Moment.');
+    }
+
+    let uploadedPath: string | null = null;
+    try {
+      if (nudge.photo_url) {
+        const response = await fetch(nudge.photo_url);
+        if (!response.ok) throw new Error('Could not copy the SkyNudge photo.');
+        const photo = await response.blob();
+        const extension = photo.type === 'image/png' ? 'png' : 'jpg';
+        uploadedPath = `${userData.user.id}/${crypto.randomUUID()}.${extension}`;
+        const { error: uploadError } = await supabase.storage.from('moment-photos').upload(uploadedPath, photo, { contentType: photo.type || 'image/jpeg', upsert: false });
+        if (uploadError) throw uploadError;
+      }
+
+      const { data: momentId, error: saveError } = await (supabase as unknown as UntypedRpcClient).rpc<string>('save_nudge_as_moment', { p_nudge_id: nudgeId });
+      if (saveError || !momentId) {
+        if (import.meta.env.DEV && saveError) console.error('save_nudge_as_moment:', saveError.code, saveError.message);
+        throw saveError ?? new Error('Could not save this SkyNudge.');
+      }
+
+      if (uploadedPath) {
+        const momentPhotos = supabase.from('sky_moment_photos') as unknown as MomentPhotoInsertClient;
+        const { error: photoRowError } = await momentPhotos.insert([{ moment_id: momentId, user_id: userData.user.id, storage_path: uploadedPath, position: 1 }]);
+        if (photoRowError) throw photoRowError;
+      }
+
+      const moment = await this.getMoment(momentId);
+      if (!moment) throw new Error('Saved Sky Moment could not be retrieved.');
+      return moment;
+    } catch (caughtError) {
+      if (uploadedPath) await supabase.storage.from('moment-photos').remove([uploadedPath]);
+      const saveError = caughtError as { code?: string; message?: string };
+      if (import.meta.env.DEV && saveError.message) console.error('save_nudge_as_moment:', saveError.code ?? '', saveError.message);
+      throw caughtError;
+    }
   }
 
   async updateMoment(momentId: string, input: UpdateMomentInput): Promise<SkyMoment> {

@@ -5,7 +5,6 @@ import type {
   CreateNudgeInput,
   Nudge,
   RadiusKm,
-  SaveMomentInput,
   SkyMoment,
   SkyUser,
   UpdateSettingsInput,
@@ -144,10 +143,12 @@ export class MockSkyNudgeApi implements SkyNudgeApi {
     }, {});
   }
 
-  async saveMoment(input: SaveMomentInput): Promise<SkyMoment> {
-    const nudge = this.nudges.find((candidate) => candidate.id === input.nudge_id);
+  async saveNudgeAsMoment(nudgeId: string): Promise<SkyMoment> {
+    const nudge = this.nudges.find((candidate) => candidate.id === nudgeId);
     if (!nudge) throw new Error('SkyNudge not found.');
-    const moment: SkyMoment = { id: `moment-${Date.now()}`, category: nudge.category, occurred_at: new Date().toISOString(), location_label: nudge.landmark ?? 'Near Melbourne CBD', direction: nudge.direction, landmark: nudge.landmark, notes: input.notes ?? '', photo_urls: nudge.photo_url ? [nudge.photo_url] : [] };
+    const expiresAt = nudge.expires_at ? Date.parse(nudge.expires_at) : Date.parse(nudge.created_at) + 30 * 60_000;
+    if (expiresAt <= Date.now()) throw new Error("This SkyNudge has ended, so it can't be saved.");
+    const moment: SkyMoment = { id: `moment-${Date.now()}`, category: nudge.category, occurred_at: new Date().toISOString(), location_label: nudge.landmark ?? 'Near Melbourne CBD', direction: nudge.direction, landmark: nudge.landmark, notes: '', photo_urls: nudge.photo_url ? [nudge.photo_url] : [] };
     this.moments = [moment, ...this.moments];
     return copyMoment(moment);
   }

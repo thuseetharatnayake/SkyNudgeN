@@ -5,6 +5,7 @@ import type { Direction, Nudge } from '../../types/sky';
 import { SkyIcon } from '../ui/SkyIcon';
 import { VerifiedBadge } from '../ui/VerifiedBadge';
 import { TopBar } from '../layout/TopBar';
+import { SaveNudgeButton } from '../moments/SaveNudgeButton';
 import { clampMinutes, expiryMinutes, peopleText, progressPercent } from './activeMomentHelpers';
 
 const rotations: Record<Direction, number> = { north: 0, east: 90, south: 180, west: 270, above: 0 };
@@ -102,6 +103,7 @@ export function ActiveMomentContent({ nudge, currentUserId, onCreate, onConfirm,
     </main>
     <footer className="active-moment__sticky">
       {ownNudge ? <p className="active-moment__own-note">This is your SkyNudge</p> : confirmed ? <button className="active-moment__see-button active-moment__see-button--done" type="button" disabled><SkyIcon name="check" size={20} strokeWidth={2.6} />You can see it too</button> : <button className="active-moment__see-button" type="button" disabled={ended || isConfirming} onClick={() => void confirm()}>{isConfirming ? 'Confirming…' : 'I can see it too'}</button>}
+      <SaveNudgeButton nudge={nudge} canSave={ownNudge || confirmed} className="active-moment__save-button" />
       <button className="active-moment__text-button" type="button" disabled={ended} onClick={onCreate}>Nudge the sky yourself</button>
       {error ? <p className="active-moment__action-error" role="alert">{error}</p> : null}
     </footer>
